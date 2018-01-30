@@ -46,7 +46,7 @@ FILE __stdin;
 int fputc(int ch, FILE *f) 
 { 
     LPUART_WriteBlocking(DEMO_LPUART, (uint8_t *)&ch, 1);
-    return 0;
+    return ch;
 }
 
 #endif  
