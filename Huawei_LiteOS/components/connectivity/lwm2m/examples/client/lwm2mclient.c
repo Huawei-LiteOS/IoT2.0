@@ -58,7 +58,7 @@
 
 #include "lwm2mclient.h"
 #include "liblwm2m.h"
-//#include "commandline.h"
+#include "commandline.h"
 #ifdef WITH_TINYDTLS
 #include "dtlsconnection.h"
 #else
@@ -84,7 +84,8 @@
 #define MAX_PACKET_SIZE 1024
 #define DEFAULT_SERVER_IPV6 "[::1]"
 //#define DEFAULT_SERVER_IPV4 "10.20.24.140"
-#define DEFAULT_SERVER_IPV4 "192.168.1.104"
+#define DEFAULT_SERVER_IPV4 "192.168.1.100"
+
 
 int g_reboot = 0;
 static int g_quit = 0;
@@ -1316,7 +1317,7 @@ int lwm2m_main(int argc, char *argv[])
                     /*
                      * Display it in the STDERR
                      */
-                    //output_buffer(stderr, buffer, numBytes, 0);
+                    output_buffer(stderr, buffer, numBytes, 0);
 
                     connP = connection_find(data.connList, &addr, addrLen);
                     if (connP != NULL)

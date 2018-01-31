@@ -499,7 +499,7 @@ void observe_step(lwm2m_context_t * contextP,
         int64_t integerValue = 0;
         bool storeValue = false;
         //coap_pdu_t message[1];
-			coap_pdu_t *message;
+        coap_pdu_t *message = NULL;
         time_t interval;
 
         LOG_URI(&(targetP->uri));
@@ -710,16 +710,16 @@ void observe_step(lwm2m_context_t * contextP,
                             }
                         }
                         //coap_init_message(message, COAP_TYPE_NON, COAP_205_CONTENT, 0);
-												message = coap_pdu_init(COAP_MESSAGE_NON, COAP_205_CONTENT,  0, COAP_MAX_PDU_SIZE);
+                        message = coap_pdu_init(COAP_MESSAGE_NON, COAP_205_CONTENT,  0, COAP_MAX_PDU_SIZE);
+                        coap_add_token(message, watcherP->tokenLen, watcherP->token);
                         coap_set_header_content_type(message, watcherP->format);
-                        //coap_set_payload(message, buffer, length);
-												coap_add_data(message, length, buffer);
+                        coap_add_data(message, length, buffer);
                     }
                     watcherP->lastTime = currentTime;
                     watcherP->lastMid = contextP->nextMID++;
                     message->hdr->id = watcherP->lastMid;
                     //coap_set_header_token(message, watcherP->token, watcherP->tokenLen);
-										coap_add_token(message, watcherP->tokenLen, watcherP->token);
+										
                     coap_set_header_observe(message, watcherP->counter++);
                     (void)message_send(contextP, message, watcherP->server->sessionH);
                     watcherP->update = false;
@@ -751,6 +751,7 @@ void observe_step(lwm2m_context_t * contextP,
         }
         if (dataP != NULL) lwm2m_data_free(size, dataP);
         if (buffer != NULL) lwm2m_free(buffer);
+        if(message != NULL)coap_delete_pdu(message);
     }
 }
 

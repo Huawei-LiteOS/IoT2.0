@@ -22,6 +22,13 @@
 
 #define _PRV_STR_LENGTH 32
 
+
+void lwm2m_data_decode_opaque(const lwm2m_data_t * dataP,
+                          int8_t * valueP)
+{
+    memcpy(valueP, dataP->value.asBuffer.buffer, dataP->value.asBuffer.length);
+}
+
 // dataP array length is assumed to be 1.
 static int prv_textSerialize(lwm2m_data_t * dataP,
                              uint8_t ** bufferP)
@@ -607,6 +614,13 @@ int lwm2m_data_serialize(lwm2m_uri_t * uriP,
     {
         LOG("Opaque format is reserved to opaque resources.");
         return -1;
+    }
+
+    
+
+    if (uriP->objectId == 19) 
+    {    
+        *formatP = LWM2M_CONTENT_OPAQUE;
     }
 
     LOG_ARG("Final format: %s", STR_MEDIA_TYPE(*formatP));

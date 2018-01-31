@@ -172,16 +172,22 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
     LOG_URI(uriP);
 	
     coap_opt_iterator_t opt_iter;
-	  coap_opt_t *block_opt;
-    block_opt = coap_check_option(message, COAP_OPTION_CONTENT_TYPE, &opt_iter);
-    //if (IS_OPTION(message, COAP_OPTION_CONTENT_TYPE))
-	  if(block_opt)
+    coap_opt_t *opt;
+    opt = coap_check_option(message, COAP_OPTION_CONTENT_TYPE, &opt_iter);
+    if(opt)
     {
         format = utils_convertMediaType(message->content_type);
     }
     else
     {
-        format = LWM2M_CONTENT_TLV;
+        if (uriP->objectId == 19) 
+        {    
+            format = LWM2M_CONTENT_OPAQUE;
+        }
+        else
+        {
+            format =LWM2M_CONTENT_TLV;
+        }
     }
 
     if (uriP->objectId == LWM2M_SECURITY_OBJECT_ID)
@@ -206,9 +212,8 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             uint8_t * buffer = NULL;
             size_t length = 0;
             int res;
-            block_opt = coap_check_option(message, COAP_OPTION_OBSERVE, &opt_iter);
-					  if(block_opt)
-            //if (IS_OPTION(message, COAP_OPTION_OBSERVE))
+            opt = coap_check_option(message, COAP_OPTION_OBSERVE, &opt_iter);
+            if (opt)
             {
                 lwm2m_data_t * dataP = NULL;
                 int size = 0;
@@ -219,9 +224,8 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                     result = observe_handleRequest(contextP, uriP, serverP, size, dataP, message, response);
                     if (COAP_205_CONTENT == result)
                     {
-                        block_opt = coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter);
-					              if(block_opt)
-											  //if (IS_OPTION(message, COAP_OPTION_ACCEPT))
+                        opt = coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter);
+                        if(opt)
                         {
                             format = utils_convertMediaType((coap_content_type_t)message->accept[0]);
                         }
@@ -244,8 +248,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                     lwm2m_data_free(size, dataP);
                 }
             }
-            //else if (IS_OPTION(message, COAP_OPTION_ACCEPT)
-						else if ( coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter)
+            else if ( coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter)
                   && message->accept_num == 1
                   && message->accept[0] == APPLICATION_LINK_FORMAT)
             {
@@ -254,8 +257,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             }
             else
             {
-                //if (IS_OPTION(message, COAP_OPTION_ACCEPT))
-							  if(coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter))
+                if(coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter))
                 {
                     format = utils_convertMediaType((coap_content_type_t)message->accept[0]);
                 }
@@ -265,9 +267,8 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             if (COAP_205_CONTENT == result)
             {
                 coap_set_header_content_type(response, format);
-                //coap_set_payload(response, buffer, length);
                 // lwm2m_handle_packet will free buffer
-							  coap_add_data(response, length, buffer);
+                coap_add_data(response, length, buffer);
             }
             else
             {
@@ -305,18 +306,27 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             else if (!LWM2M_URI_IS_SET_RESOURCE(uriP))
             {
                 result = object_write(contextP, uriP, format, message->data, strlen((const char *)message->data));
+                if(result == NO_ERROR && uriP->objectId == 19) 
+                {
+                     uint8_t res_data[] = {0,1};
+                     coap_add_data(response,2,res_data);
+                }
             }
             else
             {
                 result = object_execute(contextP, uriP, message->data, strlen((const char *)message->data));
+                if(result == NO_ERROR && uriP->objectId == 19) 
+                {
+                     uint8_t res_data[] = {0,1};
+                     coap_add_data(response,2,res_data);
+                }
             }
         }
         break;
 
     case COAP_REQUEST_PUT:
         {
-            //if (IS_OPTION(message, COAP_OPTION_URI_QUERY))
-					  if(coap_check_option(message, COAP_OPTION_URI_QUERY, &opt_iter))
+            if(coap_check_option(message, COAP_OPTION_URI_QUERY, &opt_iter))
             {
                 lwm2m_attributes_t attr;
 
@@ -331,7 +341,12 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             }
             else if (LWM2M_URI_IS_SET_INSTANCE(uriP))
             {
-                result = object_write(contextP, uriP, format, message->data, strlen((const char *)message->data));
+                result = object_write(contextP, uriP, format, message->data, message->payload_len);
+                if(result == NO_ERROR && uriP->objectId == 19) 
+                {
+                     uint8_t res_data[] = {0,1};
+                     coap_add_data(response,2,res_data);
+                }
             }
             else
             {

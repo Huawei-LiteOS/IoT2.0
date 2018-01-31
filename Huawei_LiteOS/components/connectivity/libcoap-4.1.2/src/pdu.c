@@ -162,16 +162,15 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 
 int
 coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
-  const size_t HEADERLENGTH = len + 4;
   /* must allow for pdu == NULL as callers may rely on this */
-  if (!pdu || len > 8 || pdu->max_size < HEADERLENGTH)
+  if (!pdu || len > 8)
     return 0;
 
   pdu->hdr->token_length = len;
   if (len)
     memcpy(pdu->hdr->token, data, len);
   pdu->max_delta = 0;
-  pdu->length = HEADERLENGTH;
+  pdu->length += len;
   pdu->data = NULL;
 
   return 1;
@@ -420,20 +419,24 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   unsigned int option_delta = 0;
   size_t option_length = 0;
   unsigned int *x;
-
+  uint8_t temp;
   /* Initialize packet */
   //memset(coap_pkt, 0, sizeof(coap_pdu_t));
 
   /* pointer to packet bytes */
-  coap_pkt->pbuf->payload = (void *)data;
-	char * payload = (char *)data;
+
+  coap_pkt->length            = data_len;
+  coap_pkt->hdr               = (coap_hdr_t *)data;
+  
+  temp = data[0];
 
   /* parse header fields */
-  coap_pkt->hdr->version = (COAP_HEADER_VERSION_MASK & payload[0])>>COAP_HEADER_VERSION_POSITION;
-  coap_pkt->hdr->type = (COAP_HEADER_TYPE_MASK & payload[0])>>COAP_HEADER_TYPE_POSITION;
-  coap_pkt->hdr->token_length = MIN(COAP_TOKEN_LEN, (COAP_HEADER_TOKEN_LEN_MASK & payload[0])>>COAP_HEADER_TOKEN_LEN_POSITION);
-  coap_pkt->hdr->code = payload[1];
-  coap_pkt->hdr->id = payload[2]<<8 | payload[3];
+  coap_pkt->hdr->version      = (COAP_HEADER_VERSION_MASK & temp)>>COAP_HEADER_VERSION_POSITION;
+  coap_pkt->hdr->type         = (COAP_HEADER_TYPE_MASK & temp)>>COAP_HEADER_TYPE_POSITION;
+  coap_pkt->hdr->token_length = MIN(COAP_TOKEN_LEN, (COAP_HEADER_TOKEN_LEN_MASK & temp)>>COAP_HEADER_TOKEN_LEN_POSITION);
+  coap_pkt->hdr->code         = data[1];
+  coap_pkt->hdr->id           = data[2]<<8 | data[3];
+  
 
   if (coap_pkt->hdr->version != 1)
   {

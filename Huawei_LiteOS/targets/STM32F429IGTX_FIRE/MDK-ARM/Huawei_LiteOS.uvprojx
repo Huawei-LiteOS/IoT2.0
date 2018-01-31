@@ -1200,6 +1200,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\lwm2m\examples\client\test_object.c</FilePath>
             </File>
+            <File>
+              <FileName>commandline.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\lwm2m\examples\shared\commandline.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -1321,6 +1321,15 @@ void registration_step(lwm2m_context_t * contextP,
             if (0 >= interval)
             {
                 LOG("Updating registration");
+                /*test!!!*/
+                #if 1
+                lwm2m_uri_t    uri;
+                uri.flag       = 7;
+                uri.objectId   = 19;
+                uri.instanceId = 0;
+                uri.resourceId = 0;
+                lwm2m_resource_value_changed(contextP,&uri);
+                #endif
                 prv_updateRegistration(contextP, targetP, false);
             }
             else if (interval < *timeoutP)

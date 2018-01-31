@@ -469,7 +469,7 @@ next_step:
         // do nothing
         break;
     }
-
+    
     observe_step(contextP, tv_sec, timeoutP);
 #endif
 

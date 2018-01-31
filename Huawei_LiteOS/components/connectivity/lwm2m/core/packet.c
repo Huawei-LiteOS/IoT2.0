@@ -92,7 +92,7 @@ Contains code snippets which are:
 
 #include <stdio.h>
 #include "pdu.h"
-
+#include "commandline.h"
 
 static void handle_reset(lwm2m_context_t * contextP,
                          void * fromSessionH,
@@ -460,7 +460,9 @@ uint8_t message_send(lwm2m_context_t * contextP,
     uint8_t result;
     LOG("Entering");
 
-            result = lwm2m_buffer_send(sessionH, (uint8_t *)message->hdr, message->length, contextP->userData);
+    result = lwm2m_buffer_send(sessionH, (uint8_t *)message->hdr, message->length, contextP->userData);
+    output_buffer(stderr, (uint8_t *)message->hdr, message->length, 0);
+    printf("result is %d in message_send\n",result);
 
     return result;
 }

@@ -92,6 +92,7 @@ typedef struct _prv_instance_
     uint16_t shortID;               // matches lwm2m_list_t::id
     uint8_t  test;
     double   dec;
+    uint8_t  opaq[5];
 } prv_instance_t;
 
 static void prv_output_buffer(uint8_t * buffer,
@@ -158,6 +159,8 @@ static uint8_t prv_read(uint16_t instanceId,
         case 0:
             printf("*********find resource id(%d-%d-%d) ***********************\n",
                 objectP->objID,instanceId,(*dataArrayP)[i].id);
+            lwm2m_data_encode_opaque(targetP->opaq,5,*dataArrayP + i);
+            break;
             
         case 1:
             lwm2m_data_encode_int(targetP->test, *dataArrayP + i);
@@ -226,6 +229,13 @@ static uint8_t prv_write(uint16_t instanceId,
     {
         switch (dataArray[i].id)
         {
+        case 0:
+        {
+            unsigned int index = (dataArray+i)->value.asBuffer.length;
+            if(index > 5)index=5;
+            memcpy(targetP->opaq, (dataArray+i)->value.asBuffer.buffer, index);
+            break;
+        }
         case 1:
         {
             int64_t value;
@@ -307,6 +317,11 @@ static uint8_t prv_exec(uint16_t instanceId,
 
     switch (resourceId)
     {
+    case 0:
+        {
+            printf("no in prv_exec+++++++++++++++++++++++++++\n");
+            return COAP_204_CHANGED;
+        }
     case 1:
         return COAP_405_METHOD_NOT_ALLOWED;
     case 2:
@@ -358,10 +373,16 @@ lwm2m_object_t * get_test_object(void)
             targetP = (prv_instance_t *)lwm2m_malloc(sizeof(prv_instance_t));
             if (NULL == targetP) return NULL;
             memset(targetP, 0, sizeof(prv_instance_t));
-            targetP->shortID = 10 + i;
+            targetP->shortID = 0 + i;
             targetP->test    = 20 + i;
             targetP->dec     = -30 + i + (double)i/100.0;
             testObj->instanceList = LWM2M_LIST_ADD(testObj->instanceList, targetP);
+
+            targetP->opaq[0] = 0;
+            targetP->opaq[1] = 1;
+            targetP->opaq[2] = 2;
+            targetP->opaq[3] = 3;
+            targetP->opaq[4] = 4;
         }
         /*
          * From a single instance object, two more functions are available.
