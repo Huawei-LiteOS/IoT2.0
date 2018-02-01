@@ -106,7 +106,7 @@ Contains code snippets which are:
 
 #include "internals.h"
 #include "pdu.h"
-
+#include "commandline.h"
 
 
 /*
@@ -414,7 +414,7 @@ int transaction_send(lwm2m_context_t * contextP,
             coap_pdu_t * pdu = (coap_pdu_t *)(transacP->message);
             //(void)lwm2m_buffer_send(transacP->peerH, transacP->buffer, transacP->buffer_len, contextP->userData);   
             (void)lwm2m_buffer_send(transacP->peerH, (uint8_t *)(pdu-> hdr), pdu->length, contextP->userData);
-
+            output_buffer(stderr, (uint8_t *)(pdu-> hdr), pdu->length, 0);
             transacP->retrans_time += timeout;
             transacP->retrans_counter += 1;
         }
