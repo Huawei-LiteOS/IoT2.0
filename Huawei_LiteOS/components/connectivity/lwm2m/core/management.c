@@ -281,7 +281,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
         {
             if (!LWM2M_URI_IS_SET_INSTANCE(uriP))
             {
-                result = object_create(contextP, uriP, format, message->data, strlen((const char *)message->data));
+                result = object_create(contextP, uriP, format, message->data, message->payload_len);
                 if (result == COAP_201_CREATED)
                 {
                     //longest uri is /65535/65535 = 12 + 1 (null) chars
@@ -305,21 +305,17 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             }
             else if (!LWM2M_URI_IS_SET_RESOURCE(uriP))
             {
-                result = object_write(contextP, uriP, format, message->data, strlen((const char *)message->data));
-                if(result == NO_ERROR && uriP->objectId == 19) 
-                {
-                     uint8_t res_data[] = {0,1};
-                     coap_add_data(response,2,res_data);
-                }
+                result = object_write(contextP, uriP, format, message->data, message->payload_len);
             }
             else
             {
-                result = object_execute(contextP, uriP, message->data, strlen((const char *)message->data));
-                if(result == NO_ERROR && uriP->objectId == 19) 
-                {
-                     uint8_t res_data[] = {0,1};
-                     coap_add_data(response,2,res_data);
-                }
+                result = object_execute(contextP, uriP, message->data, message->payload_len);
+            }
+            /*华为云平台，对于objectid=19，payload必须携带00 01*/
+            if(result == NO_ERROR && uriP->objectId == 19) 
+            {
+                 uint8_t res_data[] = {0,1};
+                 coap_add_data(response,2,res_data);
             }
         }
         break;

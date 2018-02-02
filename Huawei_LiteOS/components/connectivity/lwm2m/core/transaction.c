@@ -308,18 +308,16 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
                 {
                     if (COAP_MESSAGE_CON == message->hdr->type && NULL != response)
                     {
-                        //coap_init_message(response, COAP_MESSAGE_ACK, 0, message->hdr->id);
-											  response = coap_pdu_init(COAP_MESSAGE_ACK, 0, message->hdr->id, COAP_MAX_PDU_SIZE);
                         message_send(contextP, response, fromSessionH);
                     }
                 
-	                if ((COAP_401_UNAUTHORIZED == message->hdr->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
+	            if ((COAP_401_UNAUTHORIZED == message->hdr->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
     	            {
-        	            transacP->ack_received = false;
+        	        transacP->ack_received = false;
             	        transacP->retrans_time += COAP_RESPONSE_TIMEOUT;
-                	    return true;
-                	}
-				}       
+                        return true;
+                    }
+                }       
                 if (transacP->callback != NULL)
                 {
                     transacP->callback(transacP, message);

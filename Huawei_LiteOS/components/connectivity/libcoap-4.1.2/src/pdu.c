@@ -155,7 +155,12 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 #endif
 #ifdef WITH_LWIP
   if (pdu != NULL) /* accepting double free as the other implementation accept that too */
+  {
+    if(pdu->uri_path)coap_free(pdu->uri_path);
+    if(pdu->uri_query)coap_free(pdu->uri_query);
+    if(pdu->location_path)coap_free(pdu->location_path);
     pbuf_free(pdu->pbuf);
+  }
   coap_free_type(COAP_PDU, pdu);
 #endif
 }
@@ -290,6 +295,8 @@ coap_add_data(coap_pdu_t *pdu, unsigned int len, const unsigned char *data) {
 
   memcpy(pdu->data, data, len);
   pdu->length += len + 1;
+  
+  pdu->payload_len = len;/*±àÂëÉèÖÃpayload ³¤¶È*/
   return 1;
 }
 

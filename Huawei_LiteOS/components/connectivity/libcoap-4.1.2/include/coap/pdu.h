@@ -353,13 +353,13 @@ typedef struct {
   unsigned short length;    /**< PDU length (including header, options, data) */
   unsigned char *data;      /**< payload */
   uint16_t payload_len;
-  multi_option_t *uri_path;
-	multi_option_t *uri_query;
-	multi_option_t *location_path;
-	uint32_t observe;
-	uint8_t accept_num;
+  multi_option_t *uri_path;     /*multi_option_t类型是动态申请，注意释放*/
+  multi_option_t *uri_query;    /*multi_option_t类型是动态申请，注意释放*/
+  multi_option_t *location_path;/*multi_option_t类型是动态申请，注意释放*/
+  uint32_t observe;
+  uint8_t accept_num;
   uint16_t accept[COAP_MAX_ACCEPT_NUM];
-	coap_content_type_t content_type; /* Parse options once and store; allows setting options in random order  */
+  coap_content_type_t content_type; /* Parse options once and store; allows setting options in random order  */
   uint32_t block2_num;
   uint8_t block2_more;
   uint16_t block2_size;

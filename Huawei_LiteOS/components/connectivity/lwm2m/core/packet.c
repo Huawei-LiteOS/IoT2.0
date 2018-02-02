@@ -293,13 +293,13 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
                     LOG_ARG("Blockwise: block1 request NUM %u (SZX %u/ SZX Max%u) MORE %u", block1_num, block1_size, REST_MAX_CHUNK_SIZE, block1_more);
 
                     // handle block 1
-                    coap_error_code = coap_block1_handler(&serverP->block1Data, message->hdr->id, message->data, strlen((const char *)message->data), block1_size, block1_num, block1_more, &complete_buffer, &complete_buffer_size);
+                    coap_error_code = coap_block1_handler(&serverP->block1Data, message->hdr->id, message->data, message->payload_len, block1_size, block1_num, block1_more, &complete_buffer, &complete_buffer_size);
 
                     // if payload is complete, replace it in the coap message.
                     if (coap_error_code == NO_ERROR)
                     {
                         message->data = complete_buffer;
-                        //message->payload_len = complete_buffer_size;
+                        message->payload_len = complete_buffer_size;
                     }
                     else if (coap_error_code == COAP_231_CONTINUE)
                     {
@@ -317,15 +317,14 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
             }
             if (coap_error_code==NO_ERROR)
             {
-							  block_opt = coap_check_option(message, COAP_OPTION_BLOCK2, &opt_iter);
-                //if ( IS_OPTION(message, COAP_OPTION_BLOCK2) )
-							  if(block_opt)
+                block_opt = coap_check_option(message, COAP_OPTION_BLOCK2, &opt_iter);
+                if(block_opt)
                 {
                     /* unchanged new_offset indicates that resource is unaware of blockwise transfer */
                     if (new_offset==block_offset)
                     {
                         LOG_ARG("Blockwise: unaware resource with payload length %u/%u", response->payload_len, block_size);
-                        if (block_offset >= strlen((const char *)response->data))
+                        if (block_offset >= message->payload_len)
                         {
                             LOG("handle_incoming_data(): block_offset >= response->payload_len");
 
@@ -336,17 +335,17 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
 						}
                         else
                         {
-                            coap_set_header_block2(response, block_num, strlen((const char *)response->data) - block_offset > block_size, block_size);
+                            coap_set_header_block2(response, block_num, (response->payload_len - block_offset) > block_size, block_size);
                             //coap_set_payload(response, response->payload+block_offset, MIN(response->payload_len - block_offset, block_size));
-                            coap_add_data(response,  MIN(strlen((const char *)(response->data - block_offset)), block_size), response->data+block_offset);
+                            coap_add_data(response,  MIN((response->payload_len - block_offset), block_size), response->data+block_offset);
                         } /* if (valid offset) */
                     }
                     else
                     {
                         /* resource provides chunk-wise data */
                         LOG_ARG("Blockwise: blockwise resource, new offset %d", (int) new_offset);
-                        coap_set_header_block2(response, block_num, new_offset!=-1 || strlen((const char *)response->data) > block_size, block_size);
-                        if (strlen((const char *)response->data) > block_size) //coap_set_payload(response, response->payload, block_size);
+                        coap_set_header_block2(response, block_num, new_offset!=-1 || response->payload_len > block_size, block_size);
+                        if (response->payload_len > block_size) //coap_set_payload(response, response->payload, block_size);
                         	coap_add_data(response, block_size, response->data);
                     } /* if (resource aware of blockwise) */
                 }
@@ -356,7 +355,7 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
 
                     coap_set_header_block2(response, 0, new_offset!=-1, REST_MAX_CHUNK_SIZE);
                     //coap_set_payload(response, response->payload, MIN(response->payload_len, REST_MAX_CHUNK_SIZE));
-					coap_add_data(response, MIN(strlen((const char *)response->data), REST_MAX_CHUNK_SIZE), response->data);
+                    coap_add_data(response, MIN(response->payload_len, REST_MAX_CHUNK_SIZE), response->data);
                 } /* if (blockwise request) */
 
                 coap_error_code = message_send(contextP, response, fromSessionH);
@@ -387,6 +386,8 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
             case COAP_MESSAGE_NON:
             case COAP_MESSAGE_CON:
                 {
+                    response = coap_pdu_init(COAP_MESSAGE_ACK, 0, message->hdr->id, COAP_MAX_PDU_SIZE);
+                    
                     bool done = transaction_handleResponse(contextP, fromSessionH, message, response);
 
 #ifdef LWM2M_SERVER_MODE
@@ -398,11 +399,9 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
 #endif
                     if (!done && message->hdr->type == COAP_MESSAGE_CON )
                     {
-                        //coap_init_message(response, COAP_TYPE_ACK, 0, message->hdr->mid);
-                        response = coap_pdu_init(COAP_MESSAGE_ACK, 0, message->hdr->id, COAP_MAX_PDU_SIZE);
                         coap_error_code = message_send(contextP, response, fromSessionH);
-                        coap_delete_pdu(response);
                     }
+                    coap_delete_pdu(response);
                 }
                 break;
 
