@@ -84,13 +84,13 @@
 #define MAX_PACKET_SIZE 1024
 #define DEFAULT_SERVER_IPV6 "[::1]"
 //#define DEFAULT_SERVER_IPV4 "10.20.24.140"
-#define DEFAULT_SERVER_IPV4 "192.168.1.100"
+#define DEFAULT_SERVER_IPV4 "192.168.1.103"
 
 
 int g_reboot = 0;
 static int g_quit = 0;
 
-#define OBJ_COUNT 9
+#define OBJ_COUNT 10
 lwm2m_object_t * objArray[OBJ_COUNT];
 
 // only backup security and server objects
@@ -572,7 +572,7 @@ static void prv_add(char * buffer,
     lwm2m_object_t * objectP;
     int res;
 
-    objectP = get_test_object();
+    objectP = get_platform_object();
     if (objectP == NULL)
     {
         fprintf(stdout, "Creating object 31024 failed.\r\n");
@@ -664,6 +664,9 @@ static void prv_display_objects(char * buffer,
                 break;
             case TEST_OBJECT_ID:
                 display_test_object(object);
+                break;
+            case PALTFORM_OBJECT_ID:
+                display_platform_object(object);
                 break;
             }
         }
@@ -819,7 +822,7 @@ int lwm2m_main(int argc, char *argv[])
     const char * server = NULL;
     const char * serverPort = LWM2M_STANDARD_PORT_STR;
     char * name = "testlwm2mclient";
-    int lifetime = 20;/*default 300 */
+    int lifetime = 300;/*default 300 */
     int batterylevelchanging = 0;
     time_t reboot_time = 0;
     //int opt;
@@ -1077,23 +1080,30 @@ int lwm2m_main(int argc, char *argv[])
         return -1;
     }
 
-    objArray[6] = get_object_conn_m();
+    objArray[6] = get_platform_object();
     if (NULL == objArray[6])
+    {
+        fprintf(stderr, "Failed to create test object\r\n");
+        return -1;
+    }
+
+    objArray[7] = get_object_conn_m();
+    if (NULL == objArray[7])
     {
         fprintf(stderr, "Failed to create connectivity monitoring object\r\n");
         return -1;
     }
 
-    objArray[7] = get_object_conn_s();
-    if (NULL == objArray[7])
+    objArray[8] = get_object_conn_s();
+    if (NULL == objArray[8])
     {
         fprintf(stderr, "Failed to create connectivity statistics object\r\n");
         return -1;
     }
 
     int instId = 0;
-    objArray[8] = acc_ctrl_create_object();
-    if (NULL == objArray[8])
+    objArray[9] = acc_ctrl_create_object();
+    if (NULL == objArray[9])
     {
         fprintf(stderr, "Failed to create Access Control object\r\n");
         return -1;
@@ -1194,7 +1204,7 @@ int lwm2m_main(int argc, char *argv[])
         }
         else
         {
-            tv.tv_sec = 10;/*default 60*/
+            tv.tv_sec = 60;/*default 60*/
         }
         tv.tv_usec = 0;
 
@@ -1396,9 +1406,10 @@ int lwm2m_main(int argc, char *argv[])
     free_object_firmware(objArray[3]);
     free_object_location(objArray[4]);
     free_test_object(objArray[5]);
-    free_object_conn_m(objArray[6]);
-    free_object_conn_s(objArray[7]);
-    acl_ctrl_free_object(objArray[8]);
+    free_platform_object(objArray[6]);
+    free_object_conn_m(objArray[7]);
+    free_object_conn_s(objArray[8]);
+    acl_ctrl_free_object(objArray[9]);
 
 #ifdef MEMORY_TRACE
     if (g_quit == 1)
