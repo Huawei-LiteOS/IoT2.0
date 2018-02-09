@@ -851,11 +851,10 @@ int
 coap_set_header_content_type(void *packet, unsigned int content_type)
 {
   coap_pdu_t *const coap_pkt = (coap_pdu_t *) packet;
+  unsigned char data[4];
 
   coap_pkt->content_type = (coap_content_type_t) content_type;
-  //SET_OPTION(coap_pkt, COAP_OPTION_CONTENT_TYPE);
-  const unsigned char data[1] = {(unsigned char)content_type};
-  coap_add_option(coap_pkt, COAP_OPTION_CONTENT_TYPE, 1, data);
+  coap_add_option(coap_pkt, COAP_OPTION_CONTENT_TYPE, coap_encode_var_bytes(data, content_type), data);
   return 1;
 }
 

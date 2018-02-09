@@ -572,7 +572,7 @@ static void prv_add(char * buffer,
     lwm2m_object_t * objectP;
     int res;
 
-    objectP = get_platform_object();
+    objectP = get_test_object();
     if (objectP == NULL)
     {
         fprintf(stdout, "Creating object 31024 failed.\r\n");
@@ -821,8 +821,9 @@ int lwm2m_main(int argc, char *argv[])
     const char * localPort = "56830";
     const char * server = NULL;
     const char * serverPort = LWM2M_STANDARD_PORT_STR;
-    char * name = "testlwm2mclient";
-    int lifetime = 300;/*default 300 */
+    //char * name = "testlwm2mclient";
+    char * name = "urn:imei:15700077089";
+    int lifetime = 20;/*default 300 */
     int batterylevelchanging = 0;
     time_t reboot_time = 0;
     //int opt;
@@ -1079,31 +1080,24 @@ int lwm2m_main(int argc, char *argv[])
         fprintf(stderr, "Failed to create test object\r\n");
         return -1;
     }
-
-    objArray[6] = get_platform_object();
+   
+    objArray[6] = get_object_conn_m();
     if (NULL == objArray[6])
-    {
-        fprintf(stderr, "Failed to create test object\r\n");
-        return -1;
-    }
-
-    objArray[7] = get_object_conn_m();
-    if (NULL == objArray[7])
     {
         fprintf(stderr, "Failed to create connectivity monitoring object\r\n");
         return -1;
     }
 
-    objArray[8] = get_object_conn_s();
-    if (NULL == objArray[8])
+    objArray[7] = get_object_conn_s();
+    if (NULL == objArray[7])
     {
         fprintf(stderr, "Failed to create connectivity statistics object\r\n");
         return -1;
     }
 
     int instId = 0;
-    objArray[9] = acc_ctrl_create_object();
-    if (NULL == objArray[9])
+    objArray[8] = acc_ctrl_create_object();
+    if (NULL == objArray[8])
     {
         fprintf(stderr, "Failed to create Access Control object\r\n");
         return -1;
@@ -1123,6 +1117,14 @@ int lwm2m_main(int argc, char *argv[])
         fprintf(stderr, "Failed to create Access Control ACL resource for serverId: 999\r\n");
         return -1;
     }
+
+    objArray[9] = get_platform_object();
+    if (NULL == objArray[6])
+    {
+        fprintf(stderr, "Failed to create test object\r\n");
+        return -1;
+    }
+
     /*
      * The liblwm2m library is now initialized with the functions that will be in
      * charge of communication
@@ -1204,7 +1206,7 @@ int lwm2m_main(int argc, char *argv[])
         }
         else
         {
-            tv.tv_sec = 60;/*default 60*/
+            tv.tv_sec = 10;/*default 60*/
         }
         tv.tv_usec = 0;
 
@@ -1406,10 +1408,10 @@ int lwm2m_main(int argc, char *argv[])
     free_object_firmware(objArray[3]);
     free_object_location(objArray[4]);
     free_test_object(objArray[5]);
-    free_platform_object(objArray[6]);
-    free_object_conn_m(objArray[7]);
-    free_object_conn_s(objArray[8]);
-    acl_ctrl_free_object(objArray[9]);
+    free_object_conn_m(objArray[6]);
+    free_object_conn_s(objArray[7]);
+    acl_ctrl_free_object(objArray[8]);
+    free_platform_object(objArray[9]);
 
 #ifdef MEMORY_TRACE
     if (g_quit == 1)

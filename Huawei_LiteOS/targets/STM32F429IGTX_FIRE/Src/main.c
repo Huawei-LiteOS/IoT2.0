@@ -104,15 +104,6 @@ VOID task1()
     ip_addr_t ipaddr;
     ip_addr_t netmask;
     ip_addr_t gw;
-#if 0
-    UINT32 count = 0;
-    struct sockaddr_in client_addr;  
-    int sock_fd; 			   /* client socked */	
-    int err;  
-
-    char udp_msg[] = "this is a UDP test package";
-    char udp_recv_msg[100];
-#endif
 
     printf("LAN8720A Ethernet Demo\n");
 
@@ -223,8 +214,8 @@ VOID task1()
 	
 #if 0
 
-    extern int test_dtls(void);
-    test_dtls();
+    extern int test_dtls2(void);
+    test_dtls2();
 #endif
 
 		
@@ -234,45 +225,9 @@ VOID task1()
 #endif
 		
 
-#if 0
-	coap_address_t listenaddress;
-	coap_address_init(&listenaddress);
-	/* looks like a server address, but is used as end point for clients too */
-	listenaddress.addr = *(IP_ANY_TYPE);
-	listenaddress.port = 5684;
-	coap_context_t * ctx = coap_new_context(&listenaddress);
-    extern void coap_main(coap_context_t  *ctx);
-	coap_main(ctx);
-#endif
 
-#if 0		 
-    sock_fd = socket(AF_INET, SOCK_DGRAM, 0);  
-    if (sock_fd == -1) {  
-        printf("failed to create sock_fd!\n");	
-	      return;
-    }  
-	 	 
-    memset(&client_addr, 0, sizeof(client_addr));  
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_addr.s_addr = inet_addr("192.168.0.102");  
-    client_addr.sin_port = htons(60000);	
-		 
-	
-    err = sendto(sock_fd, (char *)udp_msg, sizeof(udp_msg), 0,  
-	    (struct sockaddr *)&client_addr, sizeof(client_addr));  
-    printf("err is %d\n",err);
-		
-	while(1)
-	{
-		printf("This is task 1,count is %d \r\n",count++);
-		memset(udp_recv_msg,0,100);
-		err = recvfrom(sock_fd,udp_recv_msg,100,0,NULL,NULL);
-		printf("len is %d,udp_recv_msg is %s\n",err,udp_recv_msg);
-		err = sendto(sock_fd, (char *)udp_msg, sizeof(udp_msg), 0,  
-	    (struct sockaddr *)&client_addr, sizeof(client_addr));
-		LOS_TaskDelay(500);
-	}
-#endif
+
+
 }
 
 

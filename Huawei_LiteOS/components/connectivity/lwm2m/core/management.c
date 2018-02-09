@@ -338,7 +338,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             else if (LWM2M_URI_IS_SET_INSTANCE(uriP))
             {
                 result = object_write(contextP, uriP, format, message->data, message->payload_len);
-                if(result == NO_ERROR && uriP->objectId == 19) 
+                if(result == COAP_204_CHANGED && uriP->objectId == 19) 
                 {
                      uint8_t res_data[] = {0,1};
                      coap_add_data(response,2,res_data);

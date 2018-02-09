@@ -772,7 +772,7 @@ struct dtls_pcb{
 };
 struct mbedtls_ssl_context
 {
-    const mbedtls_ssl_config *conf; /*!< configuration information          */
+    mbedtls_ssl_config *conf; /*!< configuration information          */
 
     /*
      * Miscellaneous
@@ -991,7 +991,7 @@ void mbedtls_ssl_init( mbedtls_ssl_context *ssl );
  *                 memory allocation failed
  */
 int mbedtls_ssl_setup( mbedtls_ssl_context *ssl,
-                       const mbedtls_ssl_config *conf );
+                       mbedtls_ssl_config *conf );
 
 /**
  * \brief          Reset an already initialized SSL context for re-use
@@ -2591,4 +2591,4 @@ void mbedtls_ssl_session_free( mbedtls_ssl_session *session );
 }
 #endif
 
-#endif /* ssl.h */
+#endif

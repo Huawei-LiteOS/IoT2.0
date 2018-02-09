@@ -301,8 +301,7 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
 
     lwm2m_free(payload);
     lwm2m_free(query);
-    coap_delete_pdu(transaction->message);
-    transaction->message = NULL;
+    
     server->status = STATE_REG_PENDING;
 
     return COAP_NO_ERROR;
@@ -378,8 +377,7 @@ static int prv_updateRegistration(lwm2m_context_t * contextP,
     {
         lwm2m_free(payload);
     }
-    coap_delete_pdu(transaction->message);
-    transaction->message = NULL;
+
     return COAP_NO_ERROR;
 }
 
@@ -1324,11 +1322,13 @@ void registration_step(lwm2m_context_t * contextP,
                 /*test!!!*/
                 #if 1
                 lwm2m_uri_t    uri;
-                uri.flag       = 7;
-                uri.objectId   = 19;
+                uri.flag       = 6;
+                uri.objectId   = 3;
                 uri.instanceId = 0;
                 uri.resourceId = 0;
-                lwm2m_resource_value_changed(contextP,&uri);
+                extern void lwm2m_resource_value_changed_ex(lwm2m_context_t * contextP,
+                    lwm2m_uri_t * uriP);
+                lwm2m_resource_value_changed_ex(contextP,&uri);
                 #endif
                 prv_updateRegistration(contextP, targetP, false);
             }
