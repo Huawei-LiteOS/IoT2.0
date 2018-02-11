@@ -217,6 +217,7 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
     message = coap_pdu_init(0, 0, 0, COAP_MAX_PDU_SIZE);
     if(NULL == message)
     {
+        LOG("message is NULL in lwm2m_handle_packet!!!\n");
         return;
     }
     coap_error_code = coap_parse_message(message, buffer, (uint16_t)length);
@@ -419,7 +420,6 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
                 break;
             }
         } /* Request or Response */
-        //coap_free_header(message);
 		
     } /* if (parsed correctly) */
     else

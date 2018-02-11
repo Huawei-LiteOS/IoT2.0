@@ -254,11 +254,9 @@ void transaction_free(lwm2m_transaction_t * transacP)
     LOG("Entering");
     if (transacP->message)
     {
-       coap_free_header(transacP->message);
-       lwm2m_free(transacP->message);
+       coap_delete_pdu((coap_pdu_t *)transacP->message);
     }
 
-    if (transacP->buffer) lwm2m_free(transacP->buffer);
     lwm2m_free(transacP);
 }
 
@@ -356,33 +354,7 @@ int transaction_send(lwm2m_context_t * contextP,
     bool maxRetriesReached = false;
 
     LOG("Entering");
-    if (transacP->buffer == NULL)
-    {
-        //transacP->buffer_len = coap_serialize_get_size(transacP->message);
-        transacP->buffer_len = ((coap_pdu_t *)(transacP->message))-> length;
-        if (transacP->buffer_len == 0)
-        {
-           transaction_remove(contextP, transacP);
-           return COAP_500_INTERNAL_SERVER_ERROR;
-        }
 
-        transacP->buffer = (uint8_t*)lwm2m_malloc(transacP->buffer_len);
-        if (transacP->buffer == NULL)
-        {
-           transaction_remove(contextP, transacP);
-           return COAP_500_INTERNAL_SERVER_ERROR;
-        }
-
-        //transacP->buffer_len = coap_serialize_message(transacP->message, transacP->buffer);
-
-        if (transacP->buffer_len == 0)
-        {
-            lwm2m_free(transacP->buffer);
-            transacP->buffer = NULL;
-            transaction_remove(contextP, transacP);
-            return COAP_500_INTERNAL_SERVER_ERROR;
-        }
-    }
 
     if (!transacP->ack_received)
     {
@@ -410,7 +382,6 @@ int transaction_send(lwm2m_context_t * contextP,
         if (COAP_MAX_RETRANSMIT + 1 >= transacP->retrans_counter)
         {
             coap_pdu_t * pdu = (coap_pdu_t *)(transacP->message);
-            //(void)lwm2m_buffer_send(transacP->peerH, transacP->buffer, transacP->buffer_len, contextP->userData);   
             (void)lwm2m_buffer_send(transacP->peerH, (uint8_t *)(pdu-> hdr), pdu->length, contextP->userData);
             output_buffer(stderr, (uint8_t *)(pdu-> hdr), pdu->length, 0);
             transacP->retrans_time += timeout;

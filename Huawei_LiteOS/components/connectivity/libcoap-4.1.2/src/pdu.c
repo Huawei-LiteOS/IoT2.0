@@ -156,9 +156,9 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 #ifdef WITH_LWIP
   if (pdu != NULL) /* accepting double free as the other implementation accept that too */
   {
-    if(pdu->uri_path)coap_free(pdu->uri_path);
-    if(pdu->uri_query)coap_free(pdu->uri_query);
-    if(pdu->location_path)coap_free(pdu->location_path);
+    if(pdu->uri_path)free_multi_option(pdu->uri_path);
+    if(pdu->uri_query)free_multi_option(pdu->uri_query);
+    if(pdu->location_path)free_multi_option(pdu->location_path);
     pbuf_free(pdu->pbuf);
   }
   coap_free_type(COAP_PDU, pdu);
@@ -426,21 +426,20 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   unsigned int option_delta = 0;
   size_t option_length = 0;
   unsigned int *x;
-  uint8_t temp;
+
   /* Initialize packet */
   //memset(coap_pkt, 0, sizeof(coap_pdu_t));
 
   /* pointer to packet bytes */
 
+  memcpy((unsigned char *)coap_pkt->hdr,data,data_len);
   coap_pkt->length            = data_len;
-  coap_pkt->hdr               = (coap_hdr_t *)data;
   
-  temp = data[0];
 
   /* parse header fields */
-  coap_pkt->hdr->version      = (COAP_HEADER_VERSION_MASK & temp)>>COAP_HEADER_VERSION_POSITION;
-  coap_pkt->hdr->type         = (COAP_HEADER_TYPE_MASK & temp)>>COAP_HEADER_TYPE_POSITION;
-  coap_pkt->hdr->token_length = MIN(COAP_TOKEN_LEN, (COAP_HEADER_TOKEN_LEN_MASK & temp)>>COAP_HEADER_TOKEN_LEN_POSITION);
+  coap_pkt->hdr->version      = (COAP_HEADER_VERSION_MASK & data[0])>>COAP_HEADER_VERSION_POSITION;
+  coap_pkt->hdr->type         = (COAP_HEADER_TYPE_MASK & data[0])>>COAP_HEADER_TYPE_POSITION;
+  coap_pkt->hdr->token_length = MIN(COAP_TOKEN_LEN, (COAP_HEADER_TOKEN_LEN_MASK & data[0])>>COAP_HEADER_TOKEN_LEN_POSITION);
   coap_pkt->hdr->code         = data[1];
   coap_pkt->hdr->id           = data[2]<<8 | data[3];
   
@@ -451,7 +450,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
     return BAD_REQUEST_4_00;
   }
 
-  current_option = data + COAP_HEADER_LEN;
+  current_option = (unsigned char *)coap_pkt->hdr + COAP_HEADER_LEN;
 
   if (coap_pkt->hdr->token_length!= 0)
   {
@@ -473,13 +472,13 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   /* parse options */
   current_option += coap_pkt->hdr->token_length;
 
-  while (current_option < data+data_len)
+  while (current_option < (unsigned char *)coap_pkt->hdr + coap_pkt->length)
   {
     /* Payload marker 0xFF, currently only checking for 0xF* because rest is reserved */
     if ((current_option[0] & 0xF0)==0xF0)
     {
       coap_pkt->data = ++current_option;
-      coap_pkt->payload_len = data_len - (coap_pkt->data - data);
+      coap_pkt->payload_len = coap_pkt->length - (coap_pkt->data - (unsigned char *)coap_pkt->hdr);
 
       break;
     }
@@ -510,7 +509,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
 
     option_number += option_delta;
 
-    if (current_option + option_length > data + data_len)
+    if ((current_option + option_length) > ((unsigned char *)coap_pkt->hdr + coap_pkt->length))
     {
         printf("OPTION %u (delta %u, len %u) has invalid length.\n", option_number, option_delta, option_length);
         return BAD_REQUEST_4_00;
