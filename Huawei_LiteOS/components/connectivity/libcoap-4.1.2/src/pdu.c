@@ -108,6 +108,7 @@ coap_pdu_init(unsigned char type, unsigned char code,
 #ifdef WITH_LWIP
   pdu = (coap_pdu_t*)coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
   if (!pdu) return NULL;
+  memset((uint8_t *)pdu,0,sizeof(coap_pdu_t));
   p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RAM);
   if (p == NULL) {
     coap_free_type(COAP_PDU, pdu);

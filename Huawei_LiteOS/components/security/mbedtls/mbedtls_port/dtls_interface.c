@@ -531,7 +531,7 @@ exit:
 
 
 
-mbedtls_ssl_context *dtls_ssl_new(void)
+mbedtls_ssl_context *dtls_ssl_new_with_psk(const char *psk, const char *psk_identity)
 {
     int ret;
     mbedtls_ssl_context *ssl;
@@ -541,8 +541,8 @@ mbedtls_ssl_context *dtls_ssl_new(void)
     
     
 	const char *pers = "dtls_client";
-    const char *psk = "12345678";
-    const char *psk_identity = "Client_identity";  
+    //const char *psk = "12345678";
+    //const char *psk_identity = "Client_identity";  
 	
     ssl       = mbedtls_calloc(1,sizeof(mbedtls_ssl_context));
     conf      = mbedtls_calloc(1,sizeof(mbedtls_ssl_config));
@@ -664,7 +664,7 @@ int dtls_shakehand(mbedtls_ssl_context *ssl, const char *host, const char *port)
     }
 
     mbedtls_ssl_set_bio( ssl, server_fd,
-                         mbedtls_net_send, mbedtls_net_recv, NULL );
+                         mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout );
 
     mbedtls_ssl_set_timer_cb( ssl, timer, mbedtls_timing_set_delay,
                                             mbedtls_timing_get_delay );
@@ -732,7 +732,7 @@ int dtls_sendrecv_test(void)
 
     mbedtls_ssl_context *ssl;
 
-    ssl = dtls_ssl_new();
+    ssl = dtls_ssl_new_with_psk("12345678","Client_identity");
 
     if(ssl == NULL)
         return -1;
@@ -812,6 +812,26 @@ exit:
     return ret;
 }
 
+int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len)
+{
+    int ret = 0;
+    do ret = mbedtls_ssl_write( ssl, (unsigned char *) MESSAGE, len );
+    while( ret == MBEDTLS_ERR_SSL_WANT_READ ||
+           ret == MBEDTLS_ERR_SSL_WANT_WRITE );
+    
+    return ret;
+}
+
+int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len)
+{
+    int ret = 0;
+
+    do ret = mbedtls_ssl_read( ssl, buf, len );
+    while( ret == MBEDTLS_ERR_SSL_WANT_READ ||
+           ret == MBEDTLS_ERR_SSL_WANT_WRITE );
+    
+    return ret;
+}
 
 
 

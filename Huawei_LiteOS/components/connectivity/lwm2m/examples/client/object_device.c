@@ -82,6 +82,7 @@
 #define PRV_BINDING_MODE      "UQS"
 
 #define PRV_OFFSET_MAXLEN   7 //+HH:MM\0 at max
+#define PRV_TIMEZONE_MAXLEN 25
 #define PRV_TLV_BUFFER_SIZE 128
 
 // Resource Id's:
@@ -117,6 +118,7 @@ typedef struct
     int64_t time;
     uint8_t battery_level;
     char time_offset[PRV_OFFSET_MAXLEN];
+    char time_zone[PRV_TIMEZONE_MAXLEN];
 } device_data_t;
 
 
@@ -271,7 +273,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         return COAP_205_CONTENT;
 
     case RES_O_TIMEZONE:
-        lwm2m_data_encode_string(PRV_TIME_ZONE, dataP);
+        lwm2m_data_encode_string(devDataP->time_zone, dataP);
         return COAP_205_CONTENT;
       
     case RES_M_BINDING_MODES:
@@ -468,7 +470,10 @@ static uint8_t prv_device_write(uint16_t instanceId,
 
         case RES_O_TIMEZONE:
             //ToDo IANA TZ Format
-            result = COAP_501_NOT_IMPLEMENTED;
+            strncpy(((device_data_t*)(objectP->userData))->time_zone, (char*)dataArray[i].value.asBuffer.buffer, dataArray[i].value.asBuffer.length);
+            ((device_data_t*)(objectP->userData))->time_zone[dataArray[i].value.asBuffer.length] = 0;
+            result = COAP_204_CHANGED;
+            //result = COAP_501_NOT_IMPLEMENTED;
             break;
             
         default:
@@ -581,6 +586,7 @@ lwm2m_object_t * get_object_device()
             ((device_data_t*)deviceObj->userData)->error = PRV_ERROR_CODE;
             ((device_data_t*)deviceObj->userData)->time  = 1367491215;
             strcpy(((device_data_t*)deviceObj->userData)->time_offset, "+01:00");
+            strcpy(((device_data_t*)deviceObj->userData)->time_zone, PRV_TIME_ZONE);
         }
         else
         {

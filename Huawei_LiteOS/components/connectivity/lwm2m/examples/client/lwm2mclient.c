@@ -103,10 +103,14 @@ typedef struct
 {
     lwm2m_object_t * securityObjP;
     lwm2m_object_t * serverObject;
+#ifndef LWM2M_WITH_DTLS    
     int sock;
+#endif
 #ifdef WITH_TINYDTLS
     dtls_connection_t * connList;
     lwm2m_context_t * lwm2mH;
+#elif LWM2M_WITH_DTLS
+    dtls_conn_t  *connList;/*目前仅支持一个目的地址*/
 #else
     connection_t * connList;
 #endif
@@ -210,6 +214,36 @@ void * lwm2m_connect_server(uint16_t secObjInstID,
   dataP->connList = newConnP;
   return (void *)newConnP;
 }
+#elif LWM2M_WITH_DTLS
+
+void * lwm2m_connect_server(uint16_t secObjInstID,
+                            void * userData)
+{
+
+//server->sessionH包含ssl
+
+  client_data_t * dataP;
+  lwm2m_list_t * instance;
+  dtls_conn_t * newConnP = NULL;
+  dataP = (client_data_t *)userData;
+  lwm2m_object_t  * securityObj = dataP->securityObjP;
+
+  instance = LWM2M_LIST_FIND(dataP->securityObjP->instanceList, secObjInstID);
+  if (instance == NULL) return NULL;
+
+
+  newConnP = connection_create(dataP->connList, dataP->sock, securityObj, instance->id, dataP->lwm2mH, dataP->addressFamily);
+  if (newConnP == NULL)
+  {
+      fprintf(stderr, "Connection creation failed.\n");
+      return NULL;
+  }
+
+  dataP->connList = newConnP;
+  return (void *)newConnP;
+}
+
+
 #else
 //lwm2m_connect_server(server->secObjInstID, contextP->userData);
 void * lwm2m_connect_server(uint16_t secObjInstID,
@@ -985,6 +1019,7 @@ int lwm2m_main(int argc, char *argv[])
     /*
      *This call an internal function that create an IPV6 socket on the port 5683.
      */
+#ifndef LWM2M_WITH_DTLS
     fprintf(stderr, "Trying to bind LWM2M Client to port %s\r\n", localPort);
     data.sock = create_socket(localPort, data.addressFamily);
     if (data.sock < 0)
@@ -992,6 +1027,7 @@ int lwm2m_main(int argc, char *argv[])
         fprintf(stderr, "Failed to open socket: %d %s\r\n", errno, strerror(errno));
         return -1;
     }
+#endif
 
     /*
      * Now the main function fill an array with each object, this list will be later passed to liblwm2m.
@@ -1031,7 +1067,8 @@ int lwm2m_main(int argc, char *argv[])
 
     char serverUri[50];
     int serverId = 123;
-#ifdef WITH_TINYDTLS
+    
+#if defined (WITH_TINYDTLS) || defined(LWM2M_WITH_DTLS)
     sprintf (serverUri, "coaps://%s:%s", server, serverPort);
 #else
     sprintf (serverUri, "coap://%s:%s", server, serverPort);
@@ -1176,8 +1213,9 @@ int lwm2m_main(int argc, char *argv[])
     while (0 == g_quit)
     {
         struct timeval tv;
+#ifndef LWM2M_WITH_DTLS
         fd_set readfds;
-
+#endif
         if (g_reboot)
         {
             time_t tv_sec;
@@ -1212,8 +1250,10 @@ int lwm2m_main(int argc, char *argv[])
         }
         tv.tv_usec = 0;
 
+#ifndef LWM2M_WITH_DTLS
         FD_ZERO(&readfds);
         FD_SET(data.sock, &readfds);
+#endif
 //        FD_SET(STDIN_FILENO, &readfds);
 
         /*
@@ -1251,8 +1291,9 @@ int lwm2m_main(int argc, char *argv[])
         }
         if (result != 0)
         {
-					#if 0
+					
             fprintf(stderr, "lwm2m_step() failed: 0x%X\r\n", result);
+#ifdef LWM2M_BOOTSTRAP
             if(previousState == STATE_BOOTSTRAPPING)
             {
 #ifdef WITH_LOGS
@@ -1271,6 +1312,7 @@ int lwm2m_main(int argc, char *argv[])
          * This part will set up an interruption until an event happen on SDTIN or the socket until "tv" timed out (set
          * with the precedent function)
          */
+#ifndef LWM2M_WITH_DTLS
         result = select(FD_SETSIZE, &readfds, NULL, NULL, &tv);
 
         if (result < 0)
@@ -1383,6 +1425,15 @@ int lwm2m_main(int argc, char *argv[])
 //                }
 //            }
         }
+#else
+        dtls_conn_t *connP = data.connList;
+        int numBytes;
+        uint8_t buffer[MAX_PACKET_SIZE];
+        numBytes = dtls_read(connP->ssl,buffer, MAX_PACKET_SIZE);
+        if(numBytes > 0)
+            lwm2m_handle_packet(lwm2mH, buffer, numBytes, connP);
+#endif
+        
     }
 
     /*
