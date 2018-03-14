@@ -382,6 +382,7 @@ int transaction_send(lwm2m_context_t * contextP,
         if (COAP_MAX_RETRANSMIT + 1 >= transacP->retrans_counter)
         {
             coap_pdu_t * pdu = (coap_pdu_t *)(transacP->message);
+            printf("call lwm2m_buffer_send in transaction_send, length is %d\n",pdu->length);
             (void)lwm2m_buffer_send(transacP->peerH, (uint8_t *)(pdu-> hdr), pdu->length, contextP->userData);
             output_buffer(stderr, (uint8_t *)(pdu-> hdr), pdu->length, 0);
             transacP->retrans_time += timeout;

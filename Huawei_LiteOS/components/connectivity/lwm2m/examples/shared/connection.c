@@ -22,6 +22,8 @@
 #include "connection.h"
 #include "internals.h"
 
+#ifndef LWM2M_WITH_DTLS
+
 // from commandline.c
 void output_buffer(FILE * stream, uint8_t * buffer, int length, int indent);
 
@@ -229,3 +231,6 @@ bool lwm2m_session_is_equal(void * session1,
 {
     return (session1 == session2);
 }
+
+#endif
+

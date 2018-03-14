@@ -19,43 +19,7 @@
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
 
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include "los_mbedtls_config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
-#include <stdio.h>
-#define mbedtls_printf     printf
-#define mbedtls_fprintf    fprintf
-#endif
-
-
-#include <string.h>
-
-#include "mbedtls/net_sockets.h"
-#include "mbedtls/debug.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/error.h"
-#include "mbedtls/certs.h"
-#include "mbedtls/timing.h"
-
-#define SERVER_PORT "4433"
-#define SERVER_NAME "dtls_server"
-#define SERVER_ADDR "192.168.1.100" /* forces IPv4 */
-#define MESSAGE     "Test DTLS LiteOS V2"
-
-#define READ_TIMEOUT_MS 1000
-#define MAX_RETRY       5
-
-#define DEBUG_LEVEL 0
-
-#define DTLS_RECVBUF_LEN  1024
+#include "dtls_interface.h"
 
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
@@ -301,8 +265,18 @@ int test_dtls2(void)
     const char *pers = "dtls_client";
     //const char *psk = "12345678";
     //const char *psk_identity = "Client_identity";
-    const char *psk = "e8bb121d8eb6f6028540f622d8bf59d3";
-    const char *psk_identity = "urn:imei:0123456789";
+    //const char *psk = "e8bb121d8eb6f6028540f622d8bf59d3";
+    //const char *psk_identity = "urn:imei:0123456789";
+	
+	  //const char *psk = "212c161b965035165c152dfb6327c671";
+	  //const char *psk_identity = "urn:imei:0123456789";
+	
+	  //const char *psk = "1efd48efe2594a7b0a002da3fb35c04b";
+	  //const char *psk_identity = "urn:imei:999999";
+	//const char *psk = "027768ca0bf5dfba464325dd4be70a9d";
+    char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x81};
+    char *psk_identity = "666002";
+	//const char *psk_identity = "88889999";
 
     mbedtls_timing_delay_context *timer;
 
@@ -376,7 +350,7 @@ int test_dtls2(void)
     mbedtls_ssl_conf_dbg( conf, my_debug, stdout );
 	
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
-    if( ( ret = mbedtls_ssl_conf_psk( conf, (const unsigned char *)psk, strlen(psk),
+    if( ( ret = mbedtls_ssl_conf_psk( conf, (const unsigned char *)psk, 16,
                              (const unsigned char *) psk_identity,
                              strlen( psk_identity ) ) ) != 0 )
     {
@@ -531,7 +505,7 @@ exit:
 
 
 
-mbedtls_ssl_context *dtls_ssl_new_with_psk(const char *psk, const char *psk_identity)
+mbedtls_ssl_context *dtls_ssl_new_with_psk(unsigned char *psk, unsigned psk_len, char *psk_identity)
 {
     int ret;
     mbedtls_ssl_context *ssl;
@@ -600,7 +574,7 @@ mbedtls_ssl_context *dtls_ssl_new_with_psk(const char *psk, const char *psk_iden
     mbedtls_ssl_conf_dbg( conf, my_debug, stdout );
     
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
-    if( ( ret = mbedtls_ssl_conf_psk( conf, (const unsigned char *)psk, strlen(psk),
+    if( ( ret = mbedtls_ssl_conf_psk( conf, (const unsigned char *)psk, psk_len,
                              (const unsigned char *) psk_identity,
                              strlen( psk_identity ) ) ) != 0 )
     {
@@ -732,7 +706,7 @@ int dtls_sendrecv_test(void)
 
     mbedtls_ssl_context *ssl;
 
-    ssl = dtls_ssl_new_with_psk("12345678","Client_identity");
+    //ssl = dtls_ssl_new_with_psk("12345678","Client_identity");
 
     if(ssl == NULL)
         return -1;

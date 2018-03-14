@@ -19,14 +19,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "dtlsconnection.h"
-#include "commandline.h"
+#include "dtls_conn.h"
+#include "dtls_interface.h"
+
+#ifdef LWM2M_WITH_DTLS
+
 
 #define COAP_PORT "5683"
 #define COAPS_PORT "5684"
 #define URI_LENGTH 256
 
-dtls_context_t * dtlsContext;
 
 /********************* Security Obj Helpers **********************/
 char * security_get_uri(lwm2m_object_t * obj, int instanceId, char * uriBuffer, int bufferSize){
@@ -41,7 +43,7 @@ char * security_get_uri(lwm2m_object_t * obj, int instanceId, char * uriBuffer, 
     {
         if (bufferSize > dataP->value.asBuffer.length){
             memset(uriBuffer,0,dataP->value.asBuffer.length+1);
-            strncpy(uriBuffer,dataP->value.asBuffer.buffer,dataP->value.asBuffer.length);
+            strncpy(uriBuffer,(char *)dataP->value.asBuffer.buffer,dataP->value.asBuffer.length);
             lwm2m_data_free(size, dataP);
             return uriBuffer;
         }
@@ -68,329 +70,8 @@ int64_t security_get_mode(lwm2m_object_t * obj, int instanceId){
     return LWM2M_SECURITY_MODE_NONE;
 }
 
-char * security_get_public_id(lwm2m_object_t * obj, int instanceId, int * length){
-    int size = 1;
-    lwm2m_data_t * dataP = lwm2m_data_new(size);
-    dataP->id = 3; // public key or id
-
-    obj->readFunc(instanceId, &size, &dataP, obj);
-    if (dataP != NULL &&
-        dataP->type == LWM2M_TYPE_OPAQUE)
-    {
-        char * buff;
-
-        buff = (char*)lwm2m_malloc(dataP->value.asBuffer.length);
-        if (buff != 0)
-        {
-            memcpy(buff, dataP->value.asBuffer.buffer, dataP->value.asBuffer.length);
-            *length = dataP->value.asBuffer.length;
-        }
-        lwm2m_data_free(size, dataP);
-
-        return buff;
-    } else {
-        return NULL;
-    }
-}
-
-
-char * security_get_secret_key(lwm2m_object_t * obj, int instanceId, int * length){
-    int size = 1;
-    lwm2m_data_t * dataP = lwm2m_data_new(size);
-    dataP->id = 5; // secret key
-
-    obj->readFunc(instanceId, &size, &dataP, obj);
-    if (dataP != NULL &&
-        dataP->type == LWM2M_TYPE_OPAQUE)
-    {
-        char * buff;
-
-        buff = (char*)lwm2m_malloc(dataP->value.asBuffer.length);
-        if (buff != 0)
-        {
-            memcpy(buff, dataP->value.asBuffer.buffer, dataP->value.asBuffer.length);
-            *length = dataP->value.asBuffer.length;
-        }
-        lwm2m_data_free(size, dataP);
-
-        return buff;
-    } else {
-        return NULL;
-    }
-}
-
-/********************* Security Obj Helpers Ends **********************/
-
-int send_data(dtls_connection_t *connP,
-                    uint8_t * buffer,
-                    size_t length)
-{
-    int nbSent;
-    size_t offset;
-
-#ifdef WITH_LOGS
-    char s[INET6_ADDRSTRLEN];
-    in_port_t port;
-
-    s[0] = 0;
-
-    if (AF_INET == connP->addr.sin6_family)
-    {
-        struct sockaddr_in *saddr = (struct sockaddr_in *)&connP->addr;
-        inet_ntop(saddr->sin_family, &saddr->sin_addr, s, INET6_ADDRSTRLEN);
-        port = saddr->sin_port;
-    }
-    else if (AF_INET6 == connP->addr.sin6_family)
-    {
-        struct sockaddr_in6 *saddr = (struct sockaddr_in6 *)&connP->addr;
-        inet_ntop(saddr->sin6_family, &saddr->sin6_addr, s, INET6_ADDRSTRLEN);
-        port = saddr->sin6_port;
-    }
-
-    fprintf(stderr, "Sending %d bytes to [%s]:%hu\r\n", length, s, ntohs(port));
-
-    output_buffer(stderr, buffer, length, 0);
-#endif
-
-    offset = 0;
-    while (offset != length)
-    {
-        nbSent = sendto(connP->sock, buffer + offset, length - offset, 0, (struct sockaddr *)&(connP->addr), connP->addrLen);
-        if (nbSent == -1) return -1;
-        offset += nbSent;
-    }
-    connP->lastSend = lwm2m_gettime();
-    return 0;
-}
-
-/**************************  TinyDTLS Callbacks  ************************/
-
-/* This function is the "key store" for tinyDTLS. It is called to
- * retrieve a key for the given identity within this particular
- * session. */
-static int get_psk_info(struct dtls_context_t *ctx,
-        const session_t *session,
-        dtls_credentials_type_t type,
-        const unsigned char *id, size_t id_len,
-        unsigned char *result, size_t result_length) {
-
-    // find connection
-    dtls_connection_t* cnx = connection_find((dtls_connection_t *) ctx->app, &(session->addr.st),session->size);
-    if (cnx == NULL)
-    {
-        printf("GET PSK session not found\n");
-        return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-    }
-
-    switch (type) {
-        case DTLS_PSK_IDENTITY:
-        {
-            int idLen;
-            char * id;
-            id = security_get_public_id(cnx->securityObj, cnx->securityInstId, &idLen);
-            if (result_length < idLen)
-            {
-                printf("cannot set psk_identity -- buffer too small\n");
-                return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-            }
-
-            memcpy(result, id,idLen);
-            lwm2m_free(id);
-            return idLen;
-        }
-        case DTLS_PSK_KEY:
-        {
-            int keyLen;
-            char * key;
-            key = security_get_secret_key(cnx->securityObj, cnx->securityInstId, &keyLen);
-
-            if (result_length < keyLen)
-            {
-                printf("cannot set psk -- buffer too small\n");
-                return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-            }
-
-            memcpy(result, key,keyLen);
-            lwm2m_free(key);
-            return keyLen;
-        }
-        default:
-            printf("unsupported request type: %d\n", type);
-    }
-
-    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-}
-
-static int send_to_peer(struct dtls_context_t *ctx,
-        session_t *session, uint8 *data, size_t len) {
-
-    // find connection
-    dtls_connection_t * connP = (dtls_connection_t *) ctx->app;
-    dtls_connection_t* cnx = connection_find((dtls_connection_t *) ctx->app, &(session->addr.st),session->size);
-    if (cnx != NULL)
-    {
-        // send data to peer
-
-        // TODO: nat expiration?
-        int err = send_data(cnx,data,len);
-        if (COAP_NO_ERROR != err)
-        {
-            return -1;
-        }
-        return 0;
-    }
-    return -1;
-}
-
-static int read_from_peer(struct dtls_context_t *ctx,
-          session_t *session, uint8 *data, size_t len) {
-
-    // find connection
-    dtls_connection_t * connP = (dtls_connection_t *) ctx->app;
-    dtls_connection_t* cnx = connection_find((dtls_connection_t *) ctx->app, &(session->addr.st),session->size);
-    if (cnx != NULL)
-    {
-        lwm2m_handle_packet(cnx->lwm2mH, (uint8_t*)data, len, (void*)cnx);
-        return 0;
-    }
-    return -1;
-}
-/**************************   TinyDTLS Callbacks Ends ************************/
-
-static dtls_handler_t cb = {
-  .write = send_to_peer,
-  .read  = read_from_peer,
-  .event = NULL,
-//#ifdef DTLS_PSK
-  .get_psk_info = get_psk_info,
-//#endif /* DTLS_PSK */
-//#ifdef DTLS_ECC
-//  .get_ecdsa_key = get_ecdsa_key,
-//  .verify_ecdsa_key = verify_ecdsa_key
-//#endif /* DTLS_ECC */
-};
-
-dtls_context_t * get_dtls_context(dtls_connection_t * connList) {
-    if (dtlsContext == NULL) {
-        dtls_init();
-        dtlsContext = dtls_new_context(connList);
-        if (dtlsContext == NULL)
-            fprintf(stderr, "Failed to create the DTLS context\r\n");
-        dtls_set_handler(dtlsContext, &cb);
-    }else{
-        dtlsContext->app = connList;
-    }
-    return dtlsContext;
-}
-
-int get_port(struct sockaddr *x)
-{
-   if (x->sa_family == AF_INET)
-   {
-       return ((struct sockaddr_in *)x)->sin_port;
-   } else if (x->sa_family == AF_INET6) {
-       return ((struct sockaddr_in6 *)x)->sin6_port;
-   } else {
-       printf("non IPV4 or IPV6 address\n");
-       return  -1;
-   }
-}
-
-int sockaddr_cmp(struct sockaddr *x, struct sockaddr *y)
-{
-    int portX = get_port(x);
-    int portY = get_port(y);
-
-    // if the port is invalid of different
-    if (portX == -1 || portX != portY)
-    {
-        return 0;
-    }
-
-    // IPV4?
-    if (x->sa_family == AF_INET)
-    {
-        // is V4?
-        if (y->sa_family == AF_INET)
-        {
-            // compare V4 with V4
-            return ((struct sockaddr_in *)x)->sin_addr.s_addr == ((struct sockaddr_in *)y)->sin_addr.s_addr;
-            // is V6 mapped V4?
-        } else if (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *)y)->sin6_addr)) {
-            struct in6_addr* addr6 = &((struct sockaddr_in6 *)y)->sin6_addr;
-            uint32_t y6to4 = addr6->s6_addr[15] << 24 | addr6->s6_addr[14] << 16 | addr6->s6_addr[13] << 8 | addr6->s6_addr[12];
-            return y6to4 == ((struct sockaddr_in *)x)->sin_addr.s_addr;
-        } else {
-            return 0;
-        }
-    } else if (x->sa_family == AF_INET6 && y->sa_family == AF_INET6) {
-        // IPV6 with IPV6 compare
-        return memcmp(((struct sockaddr_in6 *)x)->sin6_addr.s6_addr, ((struct sockaddr_in6 *)y)->sin6_addr.s6_addr, 16) == 0;
-    } else {
-        // unknown address type
-        printf("non IPV4 or IPV6 address\n");
-        return 0;
-    }
-}
-
-int create_socket(const char * portStr, int ai_family)
-{
-    int s = -1;
-    struct addrinfo hints;
-    struct addrinfo *res;
-    struct addrinfo *p;
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = ai_family;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    if (0 != getaddrinfo(NULL, portStr, &hints, &res))
-    {
-        return -1;
-    }
-
-    for(p = res ; p != NULL && s == -1 ; p = p->ai_next)
-    {
-        s = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (s >= 0)
-        {
-            if (-1 == bind(s, p->ai_addr, p->ai_addrlen))
-            {
-                close(s);
-                s = -1;
-            }
-        }
-    }
-
-    freeaddrinfo(res);
-
-    return s;
-}
-
-dtls_connection_t * connection_find(dtls_connection_t * connList,
-                               const struct sockaddr_storage * addr,
-                               size_t addrLen)
-{
-    dtls_connection_t * connP;
-
-    connP = connList;
-    while (connP != NULL)
-    {
-
-       if (sockaddr_cmp((struct sockaddr*) (&connP->addr),(struct sockaddr*) addr)) {
-            return connP;
-       }
-
-       connP = connP->next;
-    }
-
-    return connP;
-}
-
 
 dtls_conn_t * connection_create(dtls_conn_t * connList,
-                                 int sock,
                                  lwm2m_object_t * securityObj,
                                  int instanceId,
                                  lwm2m_context_t * lwm2mH,
@@ -403,19 +84,24 @@ dtls_conn_t * connection_create(dtls_conn_t * connList,
     char * port;
     int ret;
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = addressFamily;
-    hints.ai_socktype = SOCK_DGRAM;
-
-    if (security_get_mode(securityObj,instanceId)
-                     == LWM2M_SECURITY_MODE_NONE)
-    {
-        return NULL;
-    }
+    
+    fprintf(stderr, "now come into connection_create!!!");
+    
+    //if (security_get_mode(securityObj,instanceId)
+    //                 == LWM2M_SECURITY_MODE_NONE)
+    //{
+    //    fprintf(stderr, "LWM2M_SECURITY_MODE_NONE in connection_create!!!");
+    //    return NULL;
+    //}
 
     uri = security_get_uri(securityObj, instanceId, uriBuf, URI_LENGTH);
-    if (uri == NULL) return NULL;
-
+    if (uri == NULL) 
+    {
+        fprintf(stderr, "uri is NULL!!!");
+        return NULL;
+    }
+    printf("uri is %s\n",uri);
+    
     // parse uri in the form "coaps://[host]:[port]"
     char * defaultport;
     if (0 == strncmp(uri, "coaps://", strlen("coaps://")))
@@ -430,6 +116,7 @@ dtls_conn_t * connection_create(dtls_conn_t * connList,
     }
     else
     {
+        fprintf(stderr, "come here1!!!");
         return NULL;
     }
     port = strrchr(host, ':');
@@ -449,6 +136,7 @@ dtls_conn_t * connection_create(dtls_conn_t * connList,
             }
             else
             {
+                fprintf(stderr, "come here2!!!");
                 return NULL;
             }
         }
@@ -458,7 +146,10 @@ dtls_conn_t * connection_create(dtls_conn_t * connList,
     }
     connP = (dtls_conn_t *)lwm2m_malloc(sizeof(dtls_conn_t));
     if(connP == NULL)
+    {
+        fprintf(stderr, "connP is NULL!!!");
         return NULL;
+    }
     memset(connP, 0, sizeof(dtls_conn_t));
     connP->next = connList;
     connP->lastSend = lwm2m_gettime();
@@ -466,40 +157,51 @@ dtls_conn_t * connection_create(dtls_conn_t * connList,
     connP->securityInstId = instanceId;
     connP->lwm2mH = lwm2mH;
 
-    connP->ssl = dtls_ssl_new_with_psk("12345678","Client_identity");
+    //unsigned char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x81};
+    //char *psk_identity = "666002";
+    
+    //unsigned char psk[16] = {0x4f,0x72,0x99,0xda,0x15,0xe4,0xd7,0x30,0x76,0x23,0x4d,0x5f,0x76,0x3b,0xd0,0x05};
+    //char *psk_identity = "urn:imei:13922224222";
+    
+    unsigned char psk[16] = {0x9a,0x93,0x44,0x35,0x20,0x05,0x96,0x1b,0xc3,0x53,0x14,0x94,0x4c,0xe0,0x54,0x6a};
+    char *psk_identity = "13922224222";
 
+    //char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x81};
+    //char *psk_identity = "666002";
+    
+    fprintf(stderr, "!!!!host is %s , port is %s,in connection_create",host,port);
+    
+    connP->ssl = dtls_ssl_new_with_psk(psk,16,psk_identity);
+    printf("connP->ssl is %p in connection_create\n",connP->ssl);
     if(NULL == connP->ssl)
     {
+        fprintf(stderr, "connP->ssl is NULL in connection_create");
         lwm2m_free(connP);
         return NULL;
     }
-    ret = dtls_shakehand(connP->ssl,host,port)
+    ret = dtls_shakehand(connP->ssl,host,port);
+    
     if(ret)
     {
+        fprintf(stderr, "ret is %d in connection_create",ret);
         lwm2m_free(connP);
         return NULL;
     }
+
+    
     
 
     return connP;
 }
 
-void connection_free(dtls_connection_t * connList)
+void connection_free(dtls_conn_t * connList)
 {
-    dtls_free_context(dtlsContext);
-    dtlsContext = NULL;
-    while (connList != NULL)
-    {
-        dtls_connection_t * nextP;
-
-        nextP = connList->next;
-        free(connList);
-
-        connList = nextP;
-    }
+    //add code here;
 }
 
 int connection_send(dtls_conn_t *connP, uint8_t * buffer, size_t length){
+
+    printf("call dtls_write in connection_send, length is %d\n",length);
     
     if (connP->ssl == NULL) {
         // no security
@@ -517,31 +219,16 @@ int connection_send(dtls_conn_t *connP, uint8_t * buffer, size_t length){
                 return -1;
             }
         }
-#endif 
+#endif 
+
         return dtls_write(connP->ssl, buffer, length);
         
     }
 
-    return 0;
+
 }
 
-int connection_handle_packet(dtls_connection_t *connP, uint8_t * buffer, size_t numBytes){
-
-    if (connP->dtlsSession != NULL)
-    {
-        // Let liblwm2m respond to the query depending on the context
-        int result = dtls_handle_message(connP->dtlsContext, connP->dtlsSession, buffer, numBytes);
-        if (result !=0) {
-             printf("error dtls handling message %d\n",result);
-        }
-        return result;
-    } else {
-        // no security, just give the plaintext buffer to liblwm2m
-        lwm2m_handle_packet(connP->lwm2mH, buffer, numBytes, (void*)connP);
-        return 0;
-    }
-}
-
+#if 0
 int connection_rehandshake(dtls_connection_t *connP, bool sendCloseNotify) {
 
     // if not a dtls connection we do nothing
@@ -567,6 +254,7 @@ int connection_rehandshake(dtls_connection_t *connP, bool sendCloseNotify) {
     }
     return result;
 }
+#endif
 
 uint8_t lwm2m_buffer_send(void * sessionH,
                           uint8_t * buffer,
@@ -580,6 +268,8 @@ uint8_t lwm2m_buffer_send(void * sessionH,
         fprintf(stderr, "#> failed sending %lu bytes, missing connection\r\n", length);
         return COAP_500_INTERNAL_SERVER_ERROR ;
     }
+
+    printf("call connection_send in lwm2m_buffer_send, length is %d\n",length);
 
     if (-1 == connection_send(connP, buffer, length))
     {
@@ -596,3 +286,5 @@ bool lwm2m_session_is_equal(void * session1,
 {
     return (session1 == session2);
 }
+
+#endif

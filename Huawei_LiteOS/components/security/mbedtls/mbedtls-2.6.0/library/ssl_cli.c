@@ -886,6 +886,9 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
         MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, add ciphersuite: %04x",
                                     ciphersuites[i] ) );
 
+        printf("ciphersuites[%d] is %x\n",i,ciphersuites[i]);
+        if(ciphersuites[i] !=0xc0a8)
+            continue;
         n++;
         *p++ = (unsigned char)( ciphersuites[i] >> 8 );
         *p++ = (unsigned char)( ciphersuites[i]      );
@@ -898,9 +901,9 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
     if( ssl->renego_status == MBEDTLS_SSL_INITIAL_HANDSHAKE )
 #endif
     {
-        *p++ = (unsigned char)( MBEDTLS_SSL_EMPTY_RENEGOTIATION_INFO >> 8 );
-        *p++ = (unsigned char)( MBEDTLS_SSL_EMPTY_RENEGOTIATION_INFO      );
-        n++;
+        //*p++ = (unsigned char)( MBEDTLS_SSL_EMPTY_RENEGOTIATION_INFO >> 8 );
+        //*p++ = (unsigned char)( MBEDTLS_SSL_EMPTY_RENEGOTIATION_INFO      );
+        //n++;
     }
 
     /* Some versions of OpenSSL don't handle it correctly if not at end */
@@ -3383,7 +3386,7 @@ int mbedtls_ssl_handshake_client_step( mbedtls_ssl_context *ssl )
         ssl->state = MBEDTLS_SSL_SERVER_NEW_SESSION_TICKET;
     }
 #endif
-
+    printf("ssl->state is %d\n",ssl->state);
     switch( ssl->state )
     {
         case MBEDTLS_SSL_HELLO_REQUEST:
@@ -3471,7 +3474,7 @@ int mbedtls_ssl_handshake_client_step( mbedtls_ssl_context *ssl )
            break;
 
        case MBEDTLS_SSL_FLUSH_BUFFERS:
-           MBEDTLS_SSL_DEBUG_MSG( 2, ( "handshake: done" ) );
+           MBEDTLS_SSL_DEBUG_MSG( 0, ( "handshake: done" ) );
            ssl->state = MBEDTLS_SSL_HANDSHAKE_WRAPUP;
            break;
 

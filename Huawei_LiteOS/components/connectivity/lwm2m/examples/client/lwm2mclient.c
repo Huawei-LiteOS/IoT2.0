@@ -59,8 +59,11 @@
 #include "lwm2mclient.h"
 #include "liblwm2m.h"
 #include "commandline.h"
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS)
 #include "dtlsconnection.h"
+#elif defined(LWM2M_WITH_DTLS)
+#include "dtls_conn.h"
+#include "dtls_interface.h"
 #else
 #include "connection.h"
 #endif
@@ -80,14 +83,15 @@
 #include <lwip/errno.h>
 #include <signal.h>
 #include "internals.h"
+#include "los_task.h"
 
 #define MAX_PACKET_SIZE 1024
 #define DEFAULT_SERVER_IPV6 "[::1]"
 //#define DEFAULT_SERVER_IPV4 "10.20.24.140"
 //#define DEFAULT_SERVER_IPV4 "192.168.1.103"
-#define DEFAULT_SERVER_IPV4 "192.168.0.137"
-//#define DEFAULT_SERVER_IPV4 "139.159.209.89"
-
+//#define DEFAULT_SERVER_IPV4 "192.168.0.116"
+#define DEFAULT_SERVER_IPV4 "139.159.209.89"/*Huawei */
+//#define DEFAULT_SERVER_IPV4 "5.39.83.206"/*leshan.eclipse.org*/
 
 int g_reboot = 0;
 static int g_quit = 0;
@@ -106,11 +110,12 @@ typedef struct
 #ifndef LWM2M_WITH_DTLS    
     int sock;
 #endif
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS)
     dtls_connection_t * connList;
     lwm2m_context_t * lwm2mH;
-#elif LWM2M_WITH_DTLS
+#elif defined (LWM2M_WITH_DTLS)
     dtls_conn_t  *connList;/*目前仅支持一个目的地址*/
+    lwm2m_context_t * lwm2mH;
 #else
     connection_t * connList;
 #endif
@@ -190,7 +195,7 @@ void handle_value_changed(lwm2m_context_t * lwm2mH,
     }
 }
 
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS)
 void * lwm2m_connect_server(uint16_t secObjInstID,
                             void * userData)
 {
@@ -214,8 +219,7 @@ void * lwm2m_connect_server(uint16_t secObjInstID,
   dataP->connList = newConnP;
   return (void *)newConnP;
 }
-#elif LWM2M_WITH_DTLS
-
+#elif defined (LWM2M_WITH_DTLS)
 void * lwm2m_connect_server(uint16_t secObjInstID,
                             void * userData)
 {
@@ -228,17 +232,24 @@ void * lwm2m_connect_server(uint16_t secObjInstID,
   dataP = (client_data_t *)userData;
   lwm2m_object_t  * securityObj = dataP->securityObjP;
 
+  fprintf(stderr, "Now come into Connection creation in lwm2m_connect_server.\n");
+  
   instance = LWM2M_LIST_FIND(dataP->securityObjP->instanceList, secObjInstID);
   if (instance == NULL) return NULL;
 
 
-  newConnP = connection_create(dataP->connList, dataP->sock, securityObj, instance->id, dataP->lwm2mH, dataP->addressFamily);
+  newConnP = connection_create(dataP->connList, securityObj, instance->id, dataP->lwm2mH, dataP->addressFamily);
   if (newConnP == NULL)
   {
       fprintf(stderr, "Connection creation failed.\n");
+      
+      LOS_TaskDelay(1000*30);
+      
       return NULL;
   }
 
+  fprintf(stderr, "Connection creation successfully in lwm2m_connect_server.\n");
+  
   dataP->connList = newConnP;
   return (void *)newConnP;
 }
@@ -306,15 +317,19 @@ void lwm2m_close_connection(void * sessionH,
                             void * userData)
 {
     client_data_t * app_data;
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS)
     dtls_connection_t * targetP;
+#elif defined (LWM2M_WITH_DTLS)
+    dtls_conn_t * targetP;
 #else
     connection_t * targetP;
 #endif
 
     app_data = (client_data_t *)userData;
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS)
     targetP = (dtls_connection_t *)sessionH;
+#elif defined (LWM2M_WITH_DTLS)
+    targetP = (dtls_conn_t *)sessionH;
 #else
     targetP = (connection_t *)sessionH;
 #endif
@@ -326,8 +341,10 @@ void lwm2m_close_connection(void * sessionH,
     }
     else
     {
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS)
         dtls_connection_t * parentP;
+#elif defined (LWM2M_WITH_DTLS)
+        dtls_conn_t * parentP;
 #else
         connection_t * parentP;
 #endif
@@ -854,12 +871,22 @@ int lwm2m_main(int argc, char *argv[])
     int result;
     lwm2m_context_t * lwm2mH = NULL;
     //int i;
+#ifndef LWM2M_WITH_DTLS 
     const char * localPort = "56830";
+#endif
     const char * server = NULL;
+#if defined(LWM2M_WITH_DTLS) || defined(WITH_TINYDTLS)
+    const char * serverPort = LWM2M_DTLS_PORT_STR;
+#else
     const char * serverPort = LWM2M_STANDARD_PORT_STR;
+#endif
     //char * name = "testlwm2mclient";
-    char * name = "urn:imei:15700077089";
-    int lifetime = 20;/*default 300 */
+    //char * name = "urn:imei:15700077089";
+	  //char * name = "urn:imei:15700077090";
+    //char * name = "urn:imei:13921434520";
+    char* name="13922224222";
+    //char * name ="666002";
+    int lifetime = 60;/*default 300 */
     int batterylevelchanging = 0;
     time_t reboot_time = 0;
     //int opt;
@@ -1175,7 +1202,7 @@ int lwm2m_main(int argc, char *argv[])
         return -1;
     }
 
-#ifdef WITH_TINYDTLS
+#if defined (WITH_TINYDTLS) || defined(LWM2M_WITH_DTLS)
     data.lwm2mH = lwm2mH;
 #endif
 
@@ -1427,8 +1454,14 @@ int lwm2m_main(int argc, char *argv[])
         }
 #else
         dtls_conn_t *connP = data.connList;
+        if(connP == NULL)
+        {
+            fprintf(stderr, "connP is NULL!\r\n");
+            continue;
+        }
         int numBytes;
         uint8_t buffer[MAX_PACKET_SIZE];
+        printf("connP->ssl is %p\n",connP->ssl);
         numBytes = dtls_read(connP->ssl,buffer, MAX_PACKET_SIZE);
         if(numBytes > 0)
             lwm2m_handle_packet(lwm2mH, buffer, numBytes, connP);
@@ -1450,7 +1483,9 @@ int lwm2m_main(int argc, char *argv[])
 #endif
         lwm2m_close(lwm2mH);
     }
+#ifndef LWM2M_WITH_DTLS
     close(data.sock);
+#endif
     connection_free(data.connList);
 
     clean_security_object(objArray[0]);

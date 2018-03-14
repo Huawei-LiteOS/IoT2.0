@@ -63,6 +63,9 @@ extern "C" {
 #include <stddef.h>
 #include <stdbool.h>
 #include <time.h>
+
+#define LWM2M_WITH_DTLS
+
 #ifdef LWM2M_WITH_DTLS
 #include "ssl.h"
 #endif
