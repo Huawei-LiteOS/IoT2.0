@@ -61,7 +61,7 @@
 #include "commandline.h"
 #if defined (WITH_TINYDTLS)
 #include "dtlsconnection.h"
-#elif defined(LWM2M_WITH_DTLS)
+#elif defined(WITH_MBEDTLS)
 #include "dtls_conn.h"
 #include "dtls_interface.h"
 #else
@@ -107,13 +107,13 @@ typedef struct
 {
     lwm2m_object_t * securityObjP;
     lwm2m_object_t * serverObject;
-#ifndef LWM2M_WITH_DTLS    
+#ifndef WITH_MBEDTLS    
     int sock;
 #endif
 #if defined (WITH_TINYDTLS)
     dtls_connection_t * connList;
     lwm2m_context_t * lwm2mH;
-#elif defined (LWM2M_WITH_DTLS)
+#elif defined (WITH_MBEDTLS)
     dtls_conn_t  *connList;/*目前仅支持一个目的地址*/
     lwm2m_context_t * lwm2mH;
 #else
@@ -219,7 +219,7 @@ void * lwm2m_connect_server(uint16_t secObjInstID,
   dataP->connList = newConnP;
   return (void *)newConnP;
 }
-#elif defined (LWM2M_WITH_DTLS)
+#elif defined (WITH_MBEDTLS)
 void * lwm2m_connect_server(uint16_t secObjInstID,
                             void * userData)
 {
@@ -319,7 +319,7 @@ void lwm2m_close_connection(void * sessionH,
     client_data_t * app_data;
 #if defined (WITH_TINYDTLS)
     dtls_connection_t * targetP;
-#elif defined (LWM2M_WITH_DTLS)
+#elif defined (WITH_MBEDTLS)
     dtls_conn_t * targetP;
 #else
     connection_t * targetP;
@@ -328,7 +328,7 @@ void lwm2m_close_connection(void * sessionH,
     app_data = (client_data_t *)userData;
 #if defined (WITH_TINYDTLS)
     targetP = (dtls_connection_t *)sessionH;
-#elif defined (LWM2M_WITH_DTLS)
+#elif defined (WITH_MBEDTLS)
     targetP = (dtls_conn_t *)sessionH;
 #else
     targetP = (connection_t *)sessionH;
@@ -343,7 +343,7 @@ void lwm2m_close_connection(void * sessionH,
     {
 #if defined (WITH_TINYDTLS)
         dtls_connection_t * parentP;
-#elif defined (LWM2M_WITH_DTLS)
+#elif defined (WITH_MBEDTLS)
         dtls_conn_t * parentP;
 #else
         connection_t * parentP;
@@ -871,21 +871,20 @@ int lwm2m_main(int argc, char *argv[])
     int result;
     lwm2m_context_t * lwm2mH = NULL;
     //int i;
-#ifndef LWM2M_WITH_DTLS 
+#ifndef WITH_MBEDTLS 
     const char * localPort = "56830";
 #endif
     const char * server = NULL;
-#if defined(LWM2M_WITH_DTLS) || defined(WITH_TINYDTLS)
+#if defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS)
     const char * serverPort = LWM2M_DTLS_PORT_STR;
 #else
     const char * serverPort = LWM2M_STANDARD_PORT_STR;
 #endif
     //char * name = "testlwm2mclient";
     //char * name = "urn:imei:15700077089";
-	  //char * name = "urn:imei:15700077090";
-    //char * name = "urn:imei:13921434520";
-    char* name="13922224222";
-    //char * name ="666002";
+    //char * name = "urn:imei:15700077090";
+
+    char* name="666003";
     int lifetime = 60;/*default 300 */
     int batterylevelchanging = 0;
     time_t reboot_time = 0;
@@ -1046,7 +1045,7 @@ int lwm2m_main(int argc, char *argv[])
     /*
      *This call an internal function that create an IPV6 socket on the port 5683.
      */
-#ifndef LWM2M_WITH_DTLS
+#ifndef WITH_MBEDTLS
     fprintf(stderr, "Trying to bind LWM2M Client to port %s\r\n", localPort);
     data.sock = create_socket(localPort, data.addressFamily);
     if (data.sock < 0)
@@ -1095,7 +1094,7 @@ int lwm2m_main(int argc, char *argv[])
     char serverUri[50];
     int serverId = 123;
     
-#if defined (WITH_TINYDTLS) || defined(LWM2M_WITH_DTLS)
+#if defined (WITH_TINYDTLS) || defined(WITH_MBEDTLS)
     sprintf (serverUri, "coaps://%s:%s", server, serverPort);
 #else
     sprintf (serverUri, "coap://%s:%s", server, serverPort);
@@ -1202,7 +1201,7 @@ int lwm2m_main(int argc, char *argv[])
         return -1;
     }
 
-#if defined (WITH_TINYDTLS) || defined(LWM2M_WITH_DTLS)
+#if defined (WITH_TINYDTLS) || defined(WITH_MBEDTLS)
     data.lwm2mH = lwm2mH;
 #endif
 
@@ -1240,7 +1239,7 @@ int lwm2m_main(int argc, char *argv[])
     while (0 == g_quit)
     {
         struct timeval tv;
-#ifndef LWM2M_WITH_DTLS
+#ifndef WITH_MBEDTLS
         fd_set readfds;
 #endif
         if (g_reboot)
@@ -1277,7 +1276,7 @@ int lwm2m_main(int argc, char *argv[])
         }
         tv.tv_usec = 0;
 
-#ifndef LWM2M_WITH_DTLS
+#ifndef WITH_MBEDTLS
         FD_ZERO(&readfds);
         FD_SET(data.sock, &readfds);
 #endif
@@ -1339,7 +1338,7 @@ int lwm2m_main(int argc, char *argv[])
          * This part will set up an interruption until an event happen on SDTIN or the socket until "tv" timed out (set
          * with the precedent function)
          */
-#ifndef LWM2M_WITH_DTLS
+#ifndef WITH_MBEDTLS
         result = select(FD_SETSIZE, &readfds, NULL, NULL, &tv);
 
         if (result < 0)
@@ -1483,7 +1482,7 @@ int lwm2m_main(int argc, char *argv[])
 #endif
         lwm2m_close(lwm2mH);
     }
-#ifndef LWM2M_WITH_DTLS
+#ifndef WITH_MBEDTLS
     close(data.sock);
 #endif
     connection_free(data.connList);

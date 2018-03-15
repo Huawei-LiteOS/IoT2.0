@@ -22,7 +22,7 @@
 #include "connection.h"
 #include "internals.h"
 
-#ifndef LWM2M_WITH_DTLS
+#ifndef WITH_MBEDTLS
 
 // from commandline.c
 void output_buffer(FILE * stream, uint8_t * buffer, int length, int indent);
