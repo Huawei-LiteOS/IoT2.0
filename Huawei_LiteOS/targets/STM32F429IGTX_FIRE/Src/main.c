@@ -38,7 +38,7 @@ UINT32 g_TskHandle;
 __IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
 
 struct netif gnetif;
-#define USE_DHCP 0
+//#define USE_DHCP 0
 
 
 /* Private function prototypes -----------------------------------------------*/
