@@ -23,8 +23,8 @@
  *  Author: Achim Kraus
  *  Copyright (c) 2014 Bosch Software Innovations GmbH, Germany. All rights reserved.
  */
-#include "liblwm2m.h"
-#include "lwm2mclient.h"
+
+#include "object_comm.h"
 
 #include <stdio.h>
 #include <string.h>

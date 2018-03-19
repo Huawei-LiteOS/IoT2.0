@@ -40,6 +40,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "agenttiny.h"
+
 
 // ---- private object "Firmware" specific defines ----
 // Resource Id's:
@@ -63,6 +65,7 @@ typedef struct
 static uint8_t prv_firmware_read(uint16_t instanceId,
                                  int * numDataP,
                                  lwm2m_data_t ** dataArrayP,
+                                 lwm2m_data_cfg_t * dataCfg,
                                  lwm2m_object_t * objectP)
 {
     int i;
@@ -102,17 +105,18 @@ static uint8_t prv_firmware_read(uint16_t instanceId,
             lwm2m_data_encode_int(data->state, *dataArrayP + i);
             result = COAP_205_CONTENT;
             break;
-
         case RES_O_UPDATE_SUPPORTED_OBJECTS:
             lwm2m_data_encode_bool(data->supported, *dataArrayP + i);
             result = COAP_205_CONTENT;
             break;
 
         case RES_M_UPDATE_RESULT:
-            lwm2m_data_encode_int(data->result, *dataArrayP + i);
+        {
+            int updateresult = 0;
+            atiny_cmd_ioctl(ATINY_GET_FIRMWARE_RESULT, (char*)&updateresult, sizeof(int));
             result = COAP_205_CONTENT;
             break;
-
+        }
         default:
             result = COAP_404_NOT_FOUND;
         }
@@ -197,7 +201,7 @@ static uint8_t prv_firmware_execute(uint16_t instanceId,
     case RES_M_UPDATE:
         if (data->state == 1)
         {
-            fprintf(stdout, "\n\t FIRMWARE UPDATE\r\n\n");
+            atiny_cmd_ioctl(ATINY_TRIG_FIRMWARE_UPDATE, NULL, 0);
             // trigger your firmware download and update logic
             data->state = 2;
             return COAP_204_CHANGED;
@@ -225,7 +229,7 @@ void display_firmware_object(lwm2m_object_t * object)
 #endif
 }
 
-lwm2m_object_t * get_object_firmware(void)
+lwm2m_object_t * get_object_firmware(atiny_param_t *atiny_params)
 {
     /*
      * The get_object_firmware function create the object itself and return a pointer to the structure that represent it.

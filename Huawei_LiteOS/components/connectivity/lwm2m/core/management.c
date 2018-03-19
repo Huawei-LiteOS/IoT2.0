@@ -218,7 +218,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                 lwm2m_data_t * dataP = NULL;
                 int size = 0;
 
-                result = object_readData(contextP, uriP, &size, &dataP);
+                result = object_readData(contextP, uriP, &size, &dataP, NULL);
                 if (COAP_205_CONTENT == result)
                 {
                     result = observe_handleRequest(contextP, uriP, serverP, size, dataP, message, response);

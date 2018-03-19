@@ -56,13 +56,14 @@
  */
 
 #include "liblwm2m.h"
-#include "lwm2mclient.h"
+#include "object_comm.h"
 #include "los_sys.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include "agenttiny.h"
 
 
 #define PRV_MANUFACTURER      "Open Mobile Alliance"
@@ -117,6 +118,7 @@ typedef struct
     int64_t error;
     int64_t time;
     uint8_t battery_level;
+	char device_manufacutre[32];
     char time_offset[PRV_OFFSET_MAXLEN];
     char time_zone[PRV_TIMEZONE_MAXLEN];
 } device_data_t;
@@ -170,7 +172,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
     switch (dataP->id)
     {
     case RES_O_MANUFACTURER:
-        lwm2m_data_encode_string(PRV_MANUFACTURER, dataP);
+		lwm2m_data_encode_string(devDataP->device_manufacutre, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_MODEL_NUMBER:
@@ -214,9 +216,12 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         subTlvP = lwm2m_data_new(2);
 
         subTlvP[0].id = 0;
-        lwm2m_data_encode_int(PRV_POWER_VOLTAGE_1, subTlvP);
+        int voltage;
+        atiny_cmd_ioctl(ATINY_GET_MIN_VOLTAGE, (char*)&voltage, sizeof(int));
+        lwm2m_data_encode_int(voltage, subTlvP);
         subTlvP[1].id = 1;
-        lwm2m_data_encode_int(PRV_POWER_VOLTAGE_2, subTlvP + 1);
+        atiny_cmd_ioctl(ATINY_GET_MAX_VOLTAGE, (char*)&voltage, sizeof(int));
+        lwm2m_data_encode_int(voltage, subTlvP + 1);
 
         lwm2m_data_encode_instances(subTlvP, 2, dataP);
 
@@ -288,6 +293,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
 static uint8_t prv_device_read(uint16_t instanceId,
                                int * numDataP,
                                lwm2m_data_t ** dataArrayP,
+                               lwm2m_data_cfg_t * dataCfg,
                                lwm2m_object_t * objectP)
 {
     uint8_t result;
@@ -503,9 +509,11 @@ static uint8_t prv_device_execute(uint16_t instanceId,
     switch (resourceId)
     {
     case RES_M_REBOOT:
-        fprintf(stdout, "\n\t REBOOT\r\n\n");
+		{
+        atiny_cmd_ioctl(ATINY_DO_DEV_REBOOT, NULL, 0);
         g_reboot = 1;
         return COAP_204_CHANGED;
+		}
     case RES_O_FACTORY_RESET:
         fprintf(stdout, "\n\t FACTORY RESET\r\n\n");
         return COAP_204_CHANGED;
@@ -531,7 +539,8 @@ void display_device_object(lwm2m_object_t * object)
 #endif
 }
 
-lwm2m_object_t * get_object_device()
+
+lwm2m_object_t * get_object_device(atiny_param_t *atiny_params, const char* manufacturer)
 {
     /*
      * The get_object_device function create the object itself and return a pointer to the structure that represent it.
@@ -581,12 +590,16 @@ lwm2m_object_t * get_object_device()
          */
         if (NULL != deviceObj->userData)
         {
-            ((device_data_t*)deviceObj->userData)->battery_level = PRV_BATTERY_LEVEL;
+            ((device_data_t*)deviceObj->userData)->battery_level = 98;
             ((device_data_t*)deviceObj->userData)->free_memory   = PRV_MEMORY_FREE;
             ((device_data_t*)deviceObj->userData)->error = PRV_ERROR_CODE;
             ((device_data_t*)deviceObj->userData)->time  = 1367491215;
             strcpy(((device_data_t*)deviceObj->userData)->time_offset, "+01:00");
             strcpy(((device_data_t*)deviceObj->userData)->time_zone, PRV_TIME_ZONE);
+            strncpy(((device_data_t*)deviceObj->userData)->device_manufacutre, 
+                        manufacturer,
+                        sizeof((device_data_t*)deviceObj->userData)->device_manufacutre);
+                
         }
         else
         {

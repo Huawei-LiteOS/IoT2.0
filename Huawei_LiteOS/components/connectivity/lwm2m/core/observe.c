@@ -52,6 +52,21 @@
 
 
 #ifdef LWM2M_CLIENT_MODE
+
+static lwm2m_transaction_callback_t  observe_call_back;
+static lwm2m_observe_cancel_notify_t observe_notify = NULL;
+
+void observe_register_ack_call_back(lwm2m_transaction_callback_t callback)
+{
+    observe_call_back = callback;
+}
+
+void lwm2m_reg_observe_cancel_notify(lwm2m_observe_cancel_notify_t notify)
+{
+    observe_notify = notify;
+}
+
+
 static lwm2m_observed_t * prv_findObserved(lwm2m_context_t * contextP,
                                            lwm2m_uri_t * uriP)
 {
@@ -262,6 +277,10 @@ void observe_cancel(lwm2m_context_t * contextP,
         }
         if (targetP != NULL)
         {
+            if(observe_notify)
+            {
+                observe_notify(contextP, &observedP->uri);
+            }
             if (targetP->parameters != NULL) lwm2m_free(targetP->parameters);
             lwm2m_free(targetP);
             if (observedP->watcherList == NULL)
@@ -442,13 +461,14 @@ lwm2m_observed_t * observe_findByUri(lwm2m_context_t * contextP,
     return NULL;
 }
 
-void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
+int lwm2m_resource_value_changed(lwm2m_context_t * contextP,
                                   lwm2m_uri_t * uriP)
 {
     lwm2m_observed_t * targetP;
 
     LOG_URI(uriP);
     targetP = contextP->observedList;
+    int ret = URI_NOT_OBSERVED;
     while (targetP != NULL)
     {
         if (targetP->uri.objectId == uriP->objectId)
@@ -472,6 +492,7 @@ void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
                         {
                             LOG("Tagging a watcher");
                             watcherP->update = true;
+                            ret = URI_OBSERVED;
                         }
                     }
                 }
@@ -479,6 +500,8 @@ void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
         }
         targetP = targetP->next;
     }
+
+    return ret;
 }
 
 void lwm2m_resource_value_changed_ex(lwm2m_context_t * contextP,
@@ -535,6 +558,7 @@ void observe_step(lwm2m_context_t * contextP,
         uint8_t * buffer = NULL;
         size_t length = 0;
         lwm2m_data_t * dataP = NULL;
+        lwm2m_data_cfg_t  cfg = {0, 0, NULL};
         int size = 0;
         double floatValue = 0;
         int64_t integerValue = 0;
@@ -546,7 +570,7 @@ void observe_step(lwm2m_context_t * contextP,
         LOG_URI(&(targetP->uri));
         if (LWM2M_URI_IS_SET_RESOURCE(&targetP->uri))
         {
-            if (COAP_205_CONTENT != object_readData(contextP, &targetP->uri, &size, &dataP)) continue;
+            if (COAP_205_CONTENT != object_readData(contextP, &targetP->uri, &size, &dataP, &cfg)) continue;
             switch (dataP->type)
             {
             case LWM2M_TYPE_INTEGER:
@@ -574,6 +598,7 @@ void observe_step(lwm2m_context_t * contextP,
             if (watcherP->active == true)
             {
                 bool notify = false;
+				lwm2m_transaction_t * transaction;
 
                 if (watcherP->update == true)
                 {
@@ -744,17 +769,43 @@ void observe_step(lwm2m_context_t * contextP,
                         }
                         else
                         {
-                            if (COAP_205_CONTENT != object_read(contextP, &targetP->uri, &(watcherP->format), &buffer, &length))
+                            if (COAP_205_CONTENT != object_readData(contextP, &targetP->uri, &size, &dataP, &cfg))
                             {
                                 buffer = NULL;
                                 break;
                             }
+                            else
+                            {
+                               int res = lwm2m_data_serialize(&targetP->uri, size, dataP, &(watcherP->format), &buffer);
+                               if (res < 0)
+                               {
+                                   break;
+                               }
+                               else
+                               {
+                                   length = (size_t)res;
+                               }
+                            }       
                         }
-                        //coap_init_message(message, COAP_TYPE_NON, COAP_205_CONTENT, 0);
-                        message = coap_pdu_init(COAP_MESSAGE_NON, COAP_205_CONTENT,  0, COAP_MAX_PDU_SIZE);
-                        coap_add_token(message, watcherP->tokenLen, watcherP->token);
-                        coap_set_header_content_type(message, watcherP->format);
-                        coap_add_data(message, length, buffer);
+
+                        if (cfg.callback != NULL) 
+                        {
+                            transaction = transaction_new(watcherP->server->sessionH, COAP_205_CONTENT, NULL, NULL, contextP->nextMID++, watcherP->tokenLen, watcherP->token);
+                            transaction->cfg.callback = cfg.callback;
+                            transaction->cfg.cookie = cfg.cookie;
+                            transaction->cfg.type = cfg.type;
+                            transaction->callback = observe_call_back;                         
+                            coap_set_header_content_type(transaction->message, watcherP->format);
+                            coap_add_data(( coap_pdu_t *)transaction->message, length, buffer);
+                            contextP->transactionList = (lwm2m_transaction_t *)LWM2M_LIST_ADD(contextP->transactionList, transaction);
+                            LOG_ARG("con observe cookie:%d type:%d", transaction->cfg.cookie, transaction->cfg.type);
+                        } else {
+                            message = coap_pdu_init(COAP_MESSAGE_NON, COAP_205_CONTENT,  0, COAP_MAX_PDU_SIZE);
+                            coap_add_token(message, watcherP->tokenLen, watcherP->token);
+                            coap_set_header_content_type(message, watcherP->format);
+                            coap_add_data(message, length, buffer);
+                            LOG_ARG("non observe, msgid:", message->hdr->id);
+                        }         
                     }
                     watcherP->lastTime = currentTime;
                     watcherP->lastMid = contextP->nextMID++;
@@ -762,7 +813,15 @@ void observe_step(lwm2m_context_t * contextP,
                     //coap_set_header_token(message, watcherP->token, watcherP->tokenLen);
 										
                     coap_set_header_observe(message, watcherP->counter++);
-                    (void)message_send(contextP, message, watcherP->server->sessionH);
+
+       			    if (cfg.callback != NULL)  
+       			    {
+       			        (void)transaction_send(contextP, transaction);
+       			    }	
+       			    else
+       			    {
+       			        (void)message_send(contextP, message, watcherP->server->sessionH);
+       			    }
                     watcherP->update = false;
                 }
 

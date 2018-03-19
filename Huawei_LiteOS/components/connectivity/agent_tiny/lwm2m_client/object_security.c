@@ -136,6 +136,7 @@ static uint8_t prv_get_value(lwm2m_data_t * dataP,
 static uint8_t prv_security_read(uint16_t instanceId,
                                  int * numDataP,
                                  lwm2m_data_t ** dataArrayP,
+                                 lwm2m_data_cfg_t * dataCfg,
                                  lwm2m_object_t * objectP)
 {
     security_instance_t * targetP;

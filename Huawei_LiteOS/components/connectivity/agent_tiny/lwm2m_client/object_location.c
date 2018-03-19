@@ -136,6 +136,7 @@ static uint8_t prv_res2tlv(lwm2m_data_t* dataP,
 static uint8_t prv_location_read(uint16_t objInstId,
                                  int*  numDataP,
                                  lwm2m_data_t** tlvArrayP,
+                                 lwm2m_data_cfg_t* dataCfg,
                                  lwm2m_object_t*  objectP)
 {   
     //-------------------------------------------------------------------- JH --

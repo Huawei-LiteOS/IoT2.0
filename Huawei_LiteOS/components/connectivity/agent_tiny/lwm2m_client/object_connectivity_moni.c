@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "agenttiny.h"
 
 // Resource Id's:
 #define RES_M_NETWORK_BEARER            0
@@ -100,15 +101,20 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         lwm2m_data_t * subTlvP;
         subTlvP = lwm2m_data_new(riCnt);
         subTlvP[0].id    = 0;
-        lwm2m_data_encode_int(VALUE_AVL_NETWORK_BEARER_1, subTlvP);
+        int networkbearer = 0;
+        atiny_cmd_ioctl(ATINY_GET_NETWORK_BEARER, (char*)&networkbearer, sizeof(int));
+        lwm2m_data_encode_int(networkbearer, subTlvP);
         lwm2m_data_encode_instances(subTlvP, riCnt, dataP);
         return COAP_205_CONTENT ;
     }
 
     case RES_M_RADIO_SIGNAL_STRENGTH: //s-int
+    {
+        int signalstrength = 0;
+        atiny_cmd_ioctl(ATINY_GET_SIGNAL_STRENGTH, (char*)&signalstrength, sizeof(int));
         lwm2m_data_encode_int(connDataP->signalStrength, dataP);
         return COAP_205_CONTENT;
-
+    }
     case RES_O_LINK_QUALITY: //s-int
         lwm2m_data_encode_int(connDataP->linkQuality, dataP);
         return COAP_205_CONTENT ;
@@ -158,9 +164,13 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
 //        break;
 
     case RES_O_CELL_ID:
-        lwm2m_data_encode_int(connDataP->cellId, dataP);
+    {
+        int cellId =0;
+        atiny_cmd_ioctl(ATINY_GET_CELL_ID, (char*)&cellId, sizeof(int));
+        lwm2m_data_encode_int(cellId, dataP);
         return COAP_205_CONTENT ;
-
+    }
+		
     case RES_O_SMNC:
         lwm2m_data_encode_int(VALUE_SMNC, dataP);
         return COAP_205_CONTENT ;
@@ -177,6 +187,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
 static uint8_t prv_read(uint16_t instanceId,
                         int * numDataP,
                         lwm2m_data_t ** dataArrayP,
+                        lwm2m_data_cfg_t * dataCfg,
                         lwm2m_object_t * objectP)
 {
     uint8_t result;
@@ -226,7 +237,7 @@ static uint8_t prv_read(uint16_t instanceId,
     return result;
 }
 
-lwm2m_object_t * get_object_conn_m(void)
+lwm2m_object_t * get_object_conn_m(atiny_param_t* atiny_params)
 {
     /*
      * The get_object_conn_m() function create the object itself and return a pointer to the structure that represent it.

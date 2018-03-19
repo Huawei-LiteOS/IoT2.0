@@ -109,7 +109,7 @@ static uint8_t prv_set_tlv(lwm2m_data_t* dataP, acc_ctrl_oi_t* accCtrlOiP)
 }
 
 static uint8_t prv_read(uint16_t instanceId, int * numDataP,
-                        lwm2m_data_t** dataArrayP, lwm2m_object_t * objectP)
+                        lwm2m_data_t** dataArrayP, lwm2m_data_cfg_t * dataCfg,lwm2m_object_t * objectP)
 {
     uint8_t result;
     int     ri, ni;

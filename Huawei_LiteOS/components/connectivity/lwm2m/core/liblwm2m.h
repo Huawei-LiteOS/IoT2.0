@@ -64,7 +64,7 @@ extern "C" {
 #include <stdbool.h>
 #include <time.h>
 
-#define WITH_MBEDTLS
+//#undefine WITH_MBEDTLS
 
 #ifdef WITH_MBEDTLS
 #include "ssl.h"
@@ -333,6 +333,15 @@ struct _lwm2m_data_t
     } value;
 };
 
+typedef void (*lwm2m_data_process) (void*);
+
+typedef struct _lwm2m_data_cfg_t
+{ 
+    int type;                     /*Êý¾ÝÉÏ±¨ÀàÐÍ*/
+    int cookie;                   /*Êý¾Ýcookie,ÓÃÒÔÔÚack»Øµ÷ÖÐ£¬Çø·Ö²»Í¬µÄÊý¾Ý*/
+    lwm2m_data_process callback;  /*ack»Øµ÷*/
+}lwm2m_data_cfg_t; 
+
 typedef enum
 {
     LWM2M_CONTENT_TEXT      = 0,        // Also used as undefined
@@ -395,12 +404,13 @@ int lwm2m_decode_TLV(const uint8_t * buffer, size_t buffer_len, lwm2m_data_type_
 
 typedef struct _lwm2m_object_t lwm2m_object_t;
 
-typedef uint8_t (*lwm2m_read_callback_t) (uint16_t instanceId, int * numDataP, lwm2m_data_t ** dataArrayP, lwm2m_object_t * objectP);
+typedef uint8_t (*lwm2m_read_callback_t) (uint16_t instanceId, int * numDataP, lwm2m_data_t ** dataArrayP, lwm2m_data_cfg_t* dataCfg, lwm2m_object_t * objectP);
 typedef uint8_t (*lwm2m_discover_callback_t) (uint16_t instanceId, int * numDataP, lwm2m_data_t ** dataArrayP, lwm2m_object_t * objectP);
 typedef uint8_t (*lwm2m_write_callback_t) (uint16_t instanceId, int numData, lwm2m_data_t * dataArray, lwm2m_object_t * objectP);
 typedef uint8_t (*lwm2m_execute_callback_t) (uint16_t instanceId, uint16_t resourceId, uint8_t * buffer, int length, lwm2m_object_t * objectP);
 typedef uint8_t (*lwm2m_create_callback_t) (uint16_t instanceId, int numData, lwm2m_data_t * dataArray, lwm2m_object_t * objectP);
 typedef uint8_t (*lwm2m_delete_callback_t) (uint16_t instanceId, lwm2m_object_t * objectP);
+typedef uint8_t (*lwm2m_change_callback_t) (uint16_t instanceId, uint8_t * buffer, int length, lwm2m_object_t * objectP);
 
 struct _lwm2m_object_t
 {
@@ -410,6 +420,7 @@ struct _lwm2m_object_t
     lwm2m_read_callback_t     readFunc;
     lwm2m_write_callback_t    writeFunc;
     lwm2m_execute_callback_t  executeFunc;
+    lwm2m_change_callback_t   change;
     lwm2m_create_callback_t   createFunc;
     lwm2m_delete_callback_t   deleteFunc;
     lwm2m_discover_callback_t discoverFunc;
@@ -587,6 +598,7 @@ struct _lwm2m_transaction_
     uint8_t  retrans_counter;
     time_t   retrans_time;
     void * message;
+    lwm2m_data_cfg_t   cfg;
     lwm2m_transaction_callback_t callback;
     void * userData;
 };
@@ -678,6 +690,7 @@ typedef struct
 } lwm2m_context_t;
 
 
+
 // initialize a liblwm2m context.
 lwm2m_context_t * lwm2m_init(void * userData);
 // close a liblwm2m context.
@@ -702,7 +715,15 @@ int lwm2m_remove_object(lwm2m_context_t * contextP, uint16_t id);
 // If withObjects is true, the registration update contains the object list.
 int lwm2m_update_registration(lwm2m_context_t * contextP, uint16_t shortServerID, bool withObjects);
 
-void lwm2m_resource_value_changed(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
+enum
+{	  
+	  URI_OBSERVED,
+    URI_NOT_OBSERVED
+};
+int lwm2m_resource_value_changed(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
+
+typedef void(*lwm2m_observe_cancel_notify_t)(const lwm2m_context_t * contextP, const lwm2m_uri_t * uriP);
+void lwm2m_reg_observe_cancel_notify(lwm2m_observe_cancel_notify_t notify);
 #endif
 
 #ifdef LWM2M_SERVER_MODE

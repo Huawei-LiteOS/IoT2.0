@@ -148,7 +148,7 @@ static int prv_checkFinished(lwm2m_transaction_t * transacP,
 }
 //transaction_new(server->sessionH, COAP_POST, NULL, NULL, contextP->nextMID++, 4, NULL)
 lwm2m_transaction_t * transaction_new(void * sessionH,
-                                      coap_method_t method,
+                                      unsigned char method,
                                       char * altPath,
                                       lwm2m_uri_t * uriP,
                                       uint16_t mID,
@@ -382,7 +382,6 @@ int transaction_send(lwm2m_context_t * contextP,
         if (COAP_MAX_RETRANSMIT + 1 >= transacP->retrans_counter)
         {
             coap_pdu_t * pdu = (coap_pdu_t *)(transacP->message);
-            printf("call lwm2m_buffer_send in transaction_send, length is %d\n",pdu->length);
             (void)lwm2m_buffer_send(transacP->peerH, (uint8_t *)(pdu-> hdr), pdu->length, contextP->userData);
             output_buffer(stderr, (uint8_t *)(pdu-> hdr), pdu->length, 0);
             transacP->retrans_time += timeout;
