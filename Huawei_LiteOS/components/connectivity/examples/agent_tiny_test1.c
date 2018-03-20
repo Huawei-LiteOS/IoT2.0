@@ -192,9 +192,10 @@ void lwm2m_main(int argc, char *argv[])
         LOS_MemFree(m_aucSysMem0,atiny_params);
         return;
     }
+    creat_report_task();
     //atiny_task_para para;
     para.device_info = device_info;
     para.phandle  = g_phandle;
     atiny_task(&para);
-    creat_report_task();
+
 }
