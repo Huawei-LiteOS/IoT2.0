@@ -54,7 +54,7 @@
 #if defined(MBEDTLS_HAVE_TIME)
 #include "mbedtls/platform_time.h"
 #endif
-#include "lwip/ip_addr.h"
+
 /*
  * SSL Error codes
  */
@@ -759,17 +759,7 @@ struct mbedtls_ssl_config
 #endif
 };
 
-typedef void(*dtls2user_fn)(void *user_arg,void *user_buf,uint16_t buf_len,
-	const ip_addr_t *peer_addr,uint16_t peer_port);
-struct dtls_pcb{
-		mbedtls_ssl_context *dtls_ssl;
-		dtls2user_fn d2u_recv;
-		void *recv_arg;
-		ip_addr_t dest_addr;
-		uint16_t dest_port;
-		ip_addr_t src_addr;
-		uint16_t src_port;
-};
+
 struct mbedtls_ssl_context
 {
     mbedtls_ssl_config *conf; /*!< configuration information          */
@@ -916,7 +906,6 @@ struct mbedtls_ssl_context
     char own_verify_data[MBEDTLS_SSL_VERIFY_DATA_MAX_LEN]; /*!<  previous handshake verify data */
     char peer_verify_data[MBEDTLS_SSL_VERIFY_DATA_MAX_LEN]; /*!<  previous handshake verify data */
 #endif
-	struct dtls_pcb *dpcb;
 };
 
 #if defined(MBEDTLS_SSL_HW_RECORD_ACCEL)
@@ -2591,4 +2580,4 @@ void mbedtls_ssl_session_free( mbedtls_ssl_session *session );
 }
 #endif
 
-#endif
+#endif /* ssl.h */

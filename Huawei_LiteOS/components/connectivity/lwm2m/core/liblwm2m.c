@@ -380,7 +380,11 @@ next_step:
     switch (contextP->state)
     {
     case STATE_INITIAL:
-        if (0 != prv_refreshServerList(contextP)) return COAP_503_SERVICE_UNAVAILABLE;
+        if (0 != prv_refreshServerList(contextP)) 
+        {
+            LOG("prv_refreshServerList fail");
+            return COAP_503_SERVICE_UNAVAILABLE;
+        }
         if (contextP->serverList != NULL)
         {
             contextP->state = STATE_REGISTER_REQUIRED;

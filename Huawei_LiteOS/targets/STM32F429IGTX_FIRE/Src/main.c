@@ -38,7 +38,7 @@ UINT32 g_TskHandle;
 __IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
 
 struct netif gnetif;
-#define USE_DHCP 0
+//#define USE_DHCP 0
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -212,11 +212,6 @@ VOID task1()
   }
 #endif
 	
-#if 0
-
-    extern int test_dtls2(void);
-    test_dtls2();
-#endif
 
 		
 #if 1
@@ -224,6 +219,7 @@ VOID task1()
     lwm2m_main(1, NULL);
 #endif
 		
+
 
 
 
@@ -239,7 +235,7 @@ UINT32 creat_task1()
     task_init_param.usTaskPrio = 0;
     task_init_param.pcName = "task1";
     task_init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)task1;
-    task_init_param.uwStackSize = 0x8000;
+    task_init_param.uwStackSize = 0x1000;
 
     uwRet = LOS_TaskCreate(&g_TskHandle, &task_init_param);
     if(LOS_OK != uwRet)
@@ -250,35 +246,7 @@ UINT32 creat_task1()
         
 }
 
-VOID task2()
-{
-	//UINT32 count = 0;
-	while(1)
-	{
-		//printf("This is task 2,count is %d \r\n",count++);
-		LOS_TaskDelay(1000);
-	}
-}
 
-
-UINT32 creat_task2()
-{
-    UINT32 uwRet = LOS_OK;
-    TSK_INIT_PARAM_S task_init_param;
-
-    task_init_param.usTaskPrio = 1;
-    task_init_param.pcName = "task2";
-    task_init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)task2;
-    task_init_param.uwStackSize = 0x800;
-
-    uwRet = LOS_TaskCreate(&g_TskHandle, &task_init_param);
-    if(LOS_OK != uwRet)
-    {
-        return uwRet;
-    }
-    return uwRet;
-        
-}
 
 int main(void)
 {
@@ -286,11 +254,6 @@ int main(void)
     LOS_KernelInit();//内核初始化	
     hardware_init();//硬件初始化
     uwRet = creat_task1();
-    if(uwRet != LOS_OK)
-    {
-        return uwRet;
-    }
-    uwRet = creat_task2();
     if(uwRet != LOS_OK)
     {
         return uwRet;

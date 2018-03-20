@@ -26,14 +26,16 @@
 #endif
 
 #if defined(MBEDTLS_PLATFORM_C)
-#include "los_memory.h"
+
 #include "mbedtls/platform.h"
 
 #if defined(MBEDTLS_PLATFORM_MEMORY)
 #if !defined(MBEDTLS_PLATFORM_STD_CALLOC)
 static void *platform_calloc_uninit( size_t n, size_t size )
 {
-	return LOS_MemAlloc(m_aucSysMem0,n*size);
+    ((void) n);
+    ((void) size);
+    return( NULL );
 }
 
 #define MBEDTLS_PLATFORM_STD_CALLOC   platform_calloc_uninit
@@ -42,7 +44,7 @@ static void *platform_calloc_uninit( size_t n, size_t size )
 #if !defined(MBEDTLS_PLATFORM_STD_FREE)
 static void platform_free_uninit( void *ptr )
 {
-    LOS_MemFree(m_aucSysMem0,ptr);
+    ((void) ptr);
 }
 
 #define MBEDTLS_PLATFORM_STD_FREE     platform_free_uninit

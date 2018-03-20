@@ -68,7 +68,7 @@
 #define DTLS_RECVBUF_LEN  1024
 
 
-mbedtls_ssl_context *dtls_ssl_new_with_psk(unsigned char *psk, unsigned psk_len, char *psk_identity);
+mbedtls_ssl_context *dtls_ssl_new_with_psk(char *psk, unsigned psk_len, char *psk_identity);
 int dtls_shakehand(mbedtls_ssl_context *ssl, const char *host, const char *port);
 void dtls_ssl_destroy(mbedtls_ssl_context *ssl);
 int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len);

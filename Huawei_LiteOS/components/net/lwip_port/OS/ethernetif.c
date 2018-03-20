@@ -368,10 +368,14 @@ void ethernetif_input( void * pvParameters )
 		SYS_ARCH_DECL_PROTECT(sr);
 		
 		SYS_ARCH_PROTECT(sr);
-    p = low_level_input(s_pxNetIf);
+        p = low_level_input(s_pxNetIf);
 		SYS_ARCH_UNPROTECT(sr);
-    if (p == NULL)	
+    if (p == NULL)
+    {
+      uwInterval = LOS_MS2Tick(5);
+      LOS_TaskDelay(uwInterval);
       continue;
+    }
 		err = s_pxNetIf->input(p, s_pxNetIf);
 		if (err != ERR_OK){
 			LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));

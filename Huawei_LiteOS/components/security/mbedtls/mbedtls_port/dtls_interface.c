@@ -20,7 +20,8 @@
  */
 
 #include "dtls_interface.h"
-
+#include "atiny_adapter.h"
+#include "mbedtls/net_sockets.h"
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
                       const char *str )
@@ -30,8 +31,12 @@ static void my_debug( void *ctx, int level,
     mbedtls_printf("%s:%04d: %s", file, line, str );
 }
 
+static void* atiny_calloc(size_t n, size_t size)
+{
+    return atiny_malloc(n*size);
+}
 
-mbedtls_ssl_context *dtls_ssl_new_with_psk(unsigned char *psk, unsigned psk_len, char *psk_identity)
+mbedtls_ssl_context *dtls_ssl_new_with_psk(char *psk, unsigned psk_len, char *psk_identity)
 {
     int ret;
     mbedtls_ssl_context *ssl;
@@ -40,9 +45,13 @@ mbedtls_ssl_context *dtls_ssl_new_with_psk(unsigned char *psk, unsigned psk_len,
     mbedtls_ctr_drbg_context *ctr_drbg;
     
     
-	const char *pers = "dtls_client";
+    const char *pers = "dtls_client";
     //const char *psk = "12345678";
     //const char *psk_identity = "Client_identity";  
+
+    mbedtls_platform_set_calloc_free(atiny_calloc, atiny_free);
+    mbedtls_platform_set_snprintf(atiny_snprintf);
+    mbedtls_platform_set_printf(atiny_printf);
 	
     ssl       = mbedtls_calloc(1,sizeof(mbedtls_ssl_context));
     conf      = mbedtls_calloc(1,sizeof(mbedtls_ssl_config));
@@ -98,6 +107,7 @@ mbedtls_ssl_context *dtls_ssl_new_with_psk(unsigned char *psk, unsigned psk_len,
     mbedtls_ssl_conf_authmode( conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
     mbedtls_ssl_conf_rng( conf, mbedtls_ctr_drbg_random, ctr_drbg );
     mbedtls_ssl_conf_dbg( conf, my_debug, stdout );
+    mbedtls_ssl_conf_read_timeout( conf, 5000 );
     
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
     if( ( ret = mbedtls_ssl_conf_psk( conf, (const unsigned char *)psk, psk_len,
@@ -153,13 +163,12 @@ int dtls_shakehand(mbedtls_ssl_context *ssl, const char *host, const char *port)
     /*
       * 1. Start the connection
       */
-    mbedtls_net_init( server_fd );
     mbedtls_printf( "  . Connecting to udp/%s/%s...", host, port );
 
-    if( ( ret = mbedtls_net_connect( server_fd, host,
-                                         port, MBEDTLS_NET_PROTO_UDP ) ) != 0 )
+    if( ( server_fd = mbedtls_net_connect( host,
+                                         port, MBEDTLS_NET_PROTO_UDP ) ) == NULL )
     {
-        mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
+        mbedtls_printf( " failed\n  ! mbedtls_net_connect\n\n" );
         goto exit_fail;
     }
 

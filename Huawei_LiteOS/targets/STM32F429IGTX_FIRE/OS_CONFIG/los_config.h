@@ -287,7 +287,7 @@ extern char _PT0_END;
  * @ingroup los_config
  * Memory size
  */
-#define OS_SYS_MEM_SIZE                                     0x0020000          // size 200k
+#define OS_SYS_MEM_SIZE                                     0x0024000          // size 200k
 
 /**
  * @ingroup los_config
