@@ -162,19 +162,17 @@ static int prv_readAttributes(multi_option_t * query,
 uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                          lwm2m_uri_t * uriP,
                          lwm2m_server_t * serverP,
-                         coap_pdu_t * message,
-                         coap_pdu_t * response)
+                         coap_packet_t * message,
+                         coap_packet_t * response)
 {
     uint8_t result;
     lwm2m_media_type_t format;
+    uint8_t res_data[] = {0,1};
 
-    LOG_ARG("Code: %02X, server status: %s", message->hdr->code, STR_STATUS(serverP->status));
+    LOG_ARG("Code: %02X, server status: %s", message->code, STR_STATUS(serverP->status));
     LOG_URI(uriP);
 	
-    coap_opt_iterator_t opt_iter;
-    coap_opt_t *opt;
-    opt = coap_check_option(message, COAP_OPTION_CONTENT_TYPE, &opt_iter);
-    if(opt)
+    if (IS_OPTION(message, COAP_OPTION_CONTENT_TYPE))
     {
         format = utils_convertMediaType(message->content_type);
     }
@@ -205,15 +203,15 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
 
     // TODO: check ACL
 
-    switch (message->hdr->code)
+    switch (message->code)
     {
-    case COAP_REQUEST_GET:
+    case COAP_GET:
         {
             uint8_t * buffer = NULL;
             size_t length = 0;
             int res;
-            opt = coap_check_option(message, COAP_OPTION_OBSERVE, &opt_iter);
-            if (opt)
+
+            if (IS_OPTION(message, COAP_OPTION_OBSERVE))
             {
                 lwm2m_data_t * dataP = NULL;
                 int size = 0;
@@ -224,8 +222,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                     result = observe_handleRequest(contextP, uriP, serverP, size, dataP, message, response);
                     if (COAP_205_CONTENT == result)
                     {
-                        opt = coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter);
-                        if(opt)
+                        if (IS_OPTION(message, COAP_OPTION_ACCEPT))
                         {
                             format = utils_convertMediaType((coap_content_type_t)message->accept[0]);
                         }
@@ -248,7 +245,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                     lwm2m_data_free(size, dataP);
                 }
             }
-            else if ( coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter)
+            else if (IS_OPTION(message, COAP_OPTION_ACCEPT)
                   && message->accept_num == 1
                   && message->accept[0] == APPLICATION_LINK_FORMAT)
             {
@@ -257,7 +254,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             }
             else
             {
-                if(coap_check_option(message, COAP_OPTION_ACCEPT, &opt_iter))
+                if (IS_OPTION(message, COAP_OPTION_ACCEPT))
                 {
                     format = utils_convertMediaType((coap_content_type_t)message->accept[0]);
                 }
@@ -267,8 +264,8 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             if (COAP_205_CONTENT == result)
             {
                 coap_set_header_content_type(response, format);
+                coap_set_payload(response, buffer, length);
                 // lwm2m_handle_packet will free buffer
-                coap_add_data(response, length, buffer);
             }
             else
             {
@@ -277,11 +274,11 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
         }
         break;
 
-    case COAP_REQUEST_POST:
+    case COAP_POST:
         {
             if (!LWM2M_URI_IS_SET_INSTANCE(uriP))
             {
-                result = object_create(contextP, uriP, format, message->data, message->payload_len);
+                result = object_create(contextP, uriP, format, message->payload, message->payload_len);
                 if (result == COAP_201_CREATED)
                 {
                     //longest uri is /65535/65535 = 12 + 1 (null) chars
@@ -305,24 +302,23 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             }
             else if (!LWM2M_URI_IS_SET_RESOURCE(uriP))
             {
-                result = object_write(contextP, uriP, format, message->data, message->payload_len);
+                result = object_write(contextP, uriP, format, message->payload, message->payload_len);
             }
             else
             {
-                result = object_execute(contextP, uriP, message->data, message->payload_len);
+                result = object_execute(contextP, uriP, message->payload, message->payload_len);
             }
             /*华为云平台，对于objectid=19，payload必须携带00 01*/
             if(result == NO_ERROR && uriP->objectId == 19) 
             {
-                 uint8_t res_data[] = {0,1};
-                 coap_add_data(response,2,res_data);
+                 coap_set_payload(response, res_data, 2);
             }
         }
         break;
 
-    case COAP_REQUEST_PUT:
+    case COAP_PUT:
         {
-            if(coap_check_option(message, COAP_OPTION_URI_QUERY, &opt_iter))
+            if (IS_OPTION(message, COAP_OPTION_URI_QUERY))
             {
                 lwm2m_attributes_t attr;
 
@@ -337,11 +333,10 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             }
             else if (LWM2M_URI_IS_SET_INSTANCE(uriP))
             {
-                result = object_write(contextP, uriP, format, message->data, message->payload_len);
+                result = object_write(contextP, uriP, format, message->payload, message->payload_len);
                 if(result == COAP_204_CHANGED && uriP->objectId == 19) 
                 {
-                     uint8_t res_data[] = {0,1};
-                     coap_add_data(response,2,res_data);
+                     coap_set_payload(response, res_data, 2);
                 }
             }
             else
@@ -351,7 +346,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
         }
         break;
 
-    case COAP_REQUEST_DELETE:
+    case COAP_DELETE:
         {
             if (!LWM2M_URI_IS_SET_INSTANCE(uriP) || LWM2M_URI_IS_SET_RESOURCE(uriP))
             {
@@ -407,7 +402,7 @@ static void prv_resultCallback(lwm2m_transaction_t * transacP,
             int result = 0;
             lwm2m_uri_t locationUri;
 
-             coap_get_multi_option_as_string(packet->location_path,locationString );
+            locationString = coap_get_multi_option_as_string(packet->location_path);
             if (locationString == NULL)
             {
                 LOG("Error: coap_get_multi_option_as_string() failed for Location_path option in prv_resultCallback()");
@@ -467,8 +462,7 @@ static int prv_makeOperation(lwm2m_context_t * contextP,
     {
         coap_set_header_content_type(transaction->message, format);
         // TODO: Take care of fragmentation
-        //coap_set_payload(transaction->message, buffer, length);
-			  coap_add_data(transaction->message, length, buffer);
+        coap_set_payload(transaction->message, buffer, length);
     }
 
     if (callback != NULL)
@@ -649,7 +643,7 @@ int lwm2m_dm_write_attributes(lwm2m_context_t * contextP,
     clientP = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)contextP->clientList, clientID);
     if (clientP == NULL) return COAP_404_NOT_FOUND;
 
-    transaction = transaction_new(clientP->sessionH, COAP_REQUEST_PUT, clientP->altPath, uriP, contextP->nextMID++, 4, NULL);
+    transaction = transaction_new(clientP->sessionH, COAP_PUT, clientP->altPath, uriP, contextP->nextMID++, 4, NULL);
     if (transaction == NULL) return COAP_500_INTERNAL_SERVER_ERROR;
 
     if (callback != NULL)
@@ -779,7 +773,7 @@ int lwm2m_dm_discover(lwm2m_context_t * contextP,
     clientP = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)contextP->clientList, clientID);
     if (clientP == NULL) return COAP_404_NOT_FOUND;
 
-    transaction = transaction_new(clientP->sessionH, COAP_REQUEST_GET, clientP->altPath, uriP, contextP->nextMID++, 4, NULL);
+    transaction = transaction_new(clientP->sessionH, COAP_GET, clientP->altPath, uriP, contextP->nextMID++, 4, NULL);
     if (transaction == NULL) return COAP_500_INTERNAL_SERVER_ERROR;
 
     coap_set_header_accept(transaction->message, LWM2M_CONTENT_LINK);

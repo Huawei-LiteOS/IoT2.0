@@ -179,9 +179,8 @@ typedef enum {
   COAP_OPTION_SIZE = 28,          /* 0-4 B */
   COAP_OPTION_PROXY_URI = 35,     /* 1-270 B */
   OPTION_MAX_VALUE = 0xFFFF
-} coap_option_t__;
+} coap_option_t;
 
-#if 0
 /* CoAP Content-Types */
 typedef enum {
   TEXT_PLAIN = 0,
@@ -215,8 +214,7 @@ typedef struct _multi_option_t {
   uint8_t len;
   uint8_t *data;
 } multi_option_t;
-#endif
-#include "pdu.h"
+
 /* Parsed message struct */
 typedef struct {
   uint8_t *buffer; /* pointer to CoAP header / incoming packet buffer / memory to serialize packet */
