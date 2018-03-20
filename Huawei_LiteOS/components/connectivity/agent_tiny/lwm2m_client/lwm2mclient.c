@@ -65,7 +65,7 @@
 #include "dtls_conn.h"
 #include "dtls_interface.h"
 #else
-#include "connection.h"
+#include "dtls_conn.h"
 #endif
 
 #include <string.h>
@@ -94,7 +94,6 @@
 //#define DEFAULT_SERVER_IPV4 "5.39.83.206"/*leshan.eclipse.org*/
 
 int g_reboot = 0;
-static int g_quit = 0;
 
 #define OBJ_COUNT 10
 lwm2m_object_t * objArray[OBJ_COUNT];
@@ -103,37 +102,6 @@ lwm2m_object_t * objArray[OBJ_COUNT];
 # define BACKUP_OBJECT_COUNT 2
 lwm2m_object_t * backupObjectArray[BACKUP_OBJECT_COUNT];
 
-typedef struct
-{
-    lwm2m_object_t * securityObjP;
-    lwm2m_object_t * serverObject;
-#ifndef WITH_MBEDTLS    
-    int sock;
-#endif
-#if defined (WITH_TINYDTLS)
-    dtls_connection_t * connList;
-    lwm2m_context_t * lwm2mH;
-#elif defined (WITH_MBEDTLS)
-    dtls_conn_t  *connList;/*Ä¿Ç°½öÖ§³ÖÒ»¸öÄ¿µÄµØÖ·*/
-    lwm2m_context_t * lwm2mH;
-#else
-    connection_t * connList;
-#endif
-    int addressFamily;
-} client_data_t;
-
-#if 0
-static void prv_quit(char * buffer,
-                     void * user_data)
-{
-    g_quit = 1;
-}
-#endif
-
-void handle_sigint(int signum)
-{
-    g_quit = 2;
-}
 
 void handle_value_changed(lwm2m_context_t * lwm2mH,
                           lwm2m_uri_t * uri,
@@ -195,172 +163,9 @@ void handle_value_changed(lwm2m_context_t * lwm2mH,
     }
 }
 
-#if defined (WITH_TINYDTLS)
-void * lwm2m_connect_server(uint16_t secObjInstID,
-                            void * userData)
-{
-  client_data_t * dataP;
-  lwm2m_list_t * instance;
-  dtls_connection_t * newConnP = NULL;
-  dataP = (client_data_t *)userData;
-  lwm2m_object_t  * securityObj = dataP->securityObjP;
-
-  instance = LWM2M_LIST_FIND(dataP->securityObjP->instanceList, secObjInstID);
-  if (instance == NULL) return NULL;
 
 
-  newConnP = connection_create(dataP->connList, dataP->sock, securityObj, instance->id, dataP->lwm2mH, dataP->addressFamily);
-  if (newConnP == NULL)
-  {
-      fprintf(stderr, "Connection creation failed.\n");
-      return NULL;
-  }
 
-  dataP->connList = newConnP;
-  return (void *)newConnP;
-}
-#elif defined (WITH_MBEDTLS)
-void * lwm2m_connect_server(uint16_t secObjInstID,
-                            void * userData)
-{
-
-//server->sessionH°üº¬ssl
-
-  client_data_t * dataP;
-  lwm2m_list_t * instance;
-  dtls_conn_t * newConnP = NULL;
-  dataP = (client_data_t *)userData;
-  lwm2m_object_t  * securityObj = dataP->securityObjP;
-
-  fprintf(stderr, "Now come into Connection creation in lwm2m_connect_server.\n");
-  
-  instance = LWM2M_LIST_FIND(dataP->securityObjP->instanceList, secObjInstID);
-  if (instance == NULL) return NULL;
-
-
-  newConnP = connection_create(dataP->connList, securityObj, instance->id, dataP->lwm2mH, dataP->addressFamily);
-  if (newConnP == NULL)
-  {
-      fprintf(stderr, "Connection creation failed.\n");
-      
-      LOS_TaskDelay(1000*30);
-      
-      return NULL;
-  }
-
-  fprintf(stderr, "Connection creation successfully in lwm2m_connect_server.\n");
-  
-  dataP->connList = newConnP;
-  return (void *)newConnP;
-}
-
-
-#else
-//lwm2m_connect_server(server->secObjInstID, contextP->userData);
-void * lwm2m_connect_server(uint16_t secObjInstID,
-                            void * userData)
-{
-    client_data_t * dataP;
-    char * uri;
-    char * host;
-    char * port;
-    connection_t * newConnP = NULL;
-
-    dataP = (client_data_t *)userData;
-
-    uri = get_server_uri(dataP->securityObjP, secObjInstID);
-
-    if (uri == NULL) return NULL;
-
-    // parse uri in the form "coaps://[host]:[port]"
-    if (0==strncmp(uri, "coaps://", strlen("coaps://"))) {
-        host = uri+strlen("coaps://");
-    }
-    else if (0==strncmp(uri, "coap://",  strlen("coap://"))) {
-        host = uri+strlen("coap://");
-    }
-    else {
-        goto exit;
-    }
-    port = strrchr(host, ':');
-    if (port == NULL) goto exit;
-    // remove brackets
-    if (host[0] == '[')
-    {
-        host++;
-        if (*(port - 1) == ']')
-        {
-            *(port - 1) = 0;
-        }
-        else goto exit;
-    }
-    // split strings
-    *port = 0;
-    port++;
-
-    fprintf(stderr, "Opening connection to server at %s:%s\r\n", host, port);
-    newConnP = connection_create(dataP->connList, dataP->sock, host, port, dataP->addressFamily);
-    if (newConnP == NULL) {
-        fprintf(stderr, "Connection creation failed.\r\n");
-    }
-    else {
-        dataP->connList = newConnP;
-    }
-
-exit:
-    lwm2m_free(uri);
-    return (void *)newConnP;
-}
-#endif
-
-void lwm2m_close_connection(void * sessionH,
-                            void * userData)
-{
-    client_data_t * app_data;
-#if defined (WITH_TINYDTLS)
-    dtls_connection_t * targetP;
-#elif defined (WITH_MBEDTLS)
-    dtls_conn_t * targetP;
-#else
-    connection_t * targetP;
-#endif
-
-    app_data = (client_data_t *)userData;
-#if defined (WITH_TINYDTLS)
-    targetP = (dtls_connection_t *)sessionH;
-#elif defined (WITH_MBEDTLS)
-    targetP = (dtls_conn_t *)sessionH;
-#else
-    targetP = (connection_t *)sessionH;
-#endif
-
-    if (targetP == app_data->connList)
-    {
-        app_data->connList = targetP->next;
-        lwm2m_free(targetP);
-    }
-    else
-    {
-#if defined (WITH_TINYDTLS)
-        dtls_connection_t * parentP;
-#elif defined (WITH_MBEDTLS)
-        dtls_conn_t * parentP;
-#else
-        connection_t * parentP;
-#endif
-
-        parentP = app_data->connList;
-        while (parentP != NULL && parentP->next != targetP)
-        {
-            parentP = parentP->next;
-        }
-        if (parentP != NULL)
-        {
-            parentP->next = targetP->next;
-            lwm2m_free(targetP);
-        }
-    }
-}
 
 #if 0
 static void prv_output_servers(char * buffer,
@@ -589,7 +394,7 @@ syntax_error:
     fprintf(stdout, "Syntax error !\n");
 }
 #endif
-
+#if 0
 static void update_battery_level(lwm2m_context_t * context)
 {
     static time_t next_change_time = 0;
@@ -617,7 +422,7 @@ static void update_battery_level(lwm2m_context_t * context)
         next_change_time = tv_sec + level + 10;
     }
 }
-#if 0
+
 static void prv_add(char * buffer,
                     void * user_data)
 {

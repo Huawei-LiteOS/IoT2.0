@@ -47,29 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-typedef struct _security_instance_
-{
-    struct _security_instance_ * next;        // matches lwm2m_list_t::next
-    uint16_t                     instanceId;  // matches lwm2m_list_t::id
-    char *                       uri;
-    bool                         isBootstrap;    
-    uint8_t                      securityMode;
-    char *                       publicIdentity;
-    uint16_t                     publicIdLen;
-    char *                       serverPublicKey;
-    uint16_t                     serverPublicKeyLen;
-    char *                       secretKey;
-    uint16_t                     secretKeyLen;
-    uint8_t                      smsSecurityMode;
-    char *                       smsParams; // SMS binding key parameters
-    uint16_t                     smsParamsLen;
-    char *                       smsSecret; // SMS binding secret key
-    uint16_t                     smsSecretLen;
-    uint16_t                     shortID;
-    uint32_t                     clientHoldOffTime;
-    uint32_t                     bootstrapServerAccountTimeout;
-} security_instance_t;
+#include "object_comm.h"
 
 static uint8_t prv_get_value(lwm2m_data_t * dataP,
                              security_instance_t * targetP)
@@ -523,7 +501,6 @@ lwm2m_object_t * get_security_object(int serverId,
                                      bool isBootstrap)
 {
     lwm2m_object_t * securityObj;
-
     securityObj = (lwm2m_object_t *)lwm2m_malloc(sizeof(lwm2m_object_t));
 
     if (NULL != securityObj)
@@ -589,8 +566,11 @@ lwm2m_object_t * get_security_object(int serverId,
     return securityObj;
 }
 
-char * get_server_uri(lwm2m_object_t * objectP,
-                      uint16_t secObjInstID)
+
+
+/********************* Security Obj Helpers **********************/
+
+char * security_get_uri(lwm2m_object_t * objectP, uint16_t secObjInstID)
 {
     security_instance_t * targetP = (security_instance_t *)LWM2M_LIST_FIND(objectP->instanceList, secObjInstID);
 

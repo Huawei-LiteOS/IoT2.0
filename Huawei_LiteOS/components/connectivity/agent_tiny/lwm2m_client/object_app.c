@@ -18,7 +18,7 @@
 #include "object_comm.h"
 #include "agenttiny.h"
 #include "agent_list.h"
-
+#include "los_hwi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

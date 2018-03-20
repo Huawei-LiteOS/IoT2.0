@@ -64,34 +64,22 @@ extern "C" {
  */
 typedef struct
 {
-    int fd;             /**< The underlying file descriptor                 */
+    int fd;
 }
 mbedtls_net_context;
 
 /**
- * \brief          Initialize a context
- *                 Just makes the context ready to be used or freed safely.
- *
- * \param ctx      Context to initialize
- */
-void mbedtls_net_init( mbedtls_net_context *ctx );
-
-/**
  * \brief          Initiate a connection with host:port in the given protocol
  *
- * \param ctx      Socket to use
  * \param host     Host to connect to
  * \param port     Port to connect to
  * \param proto    Protocol: MBEDTLS_NET_PROTO_TCP or MBEDTLS_NET_PROTO_UDP
  *
- * \return         0 if successful, or one of:
- *                      MBEDTLS_ERR_NET_SOCKET_FAILED,
- *                      MBEDTLS_ERR_NET_UNKNOWN_HOST,
- *                      MBEDTLS_ERR_NET_CONNECT_FAILED
+ * \return         Socket you created if successful, or NULL if failed
  *
  * \note           Sets the socket in connected mode even with UDP.
  */
-int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host, const char *port, int proto );
+void* mbedtls_net_connect( const char *host, const char *port, int proto );
 
 /**
  * \brief          Create a receiving socket on bind_ip:port in the chosen

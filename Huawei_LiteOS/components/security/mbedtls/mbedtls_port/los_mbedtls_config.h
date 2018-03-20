@@ -34,8 +34,6 @@
 /* System support */
 //#define MBEDTLS_HAVE_TIME /* Optionally used in Hello messages */
 /* Other MBEDTLS_HAVE_XXX flags irrelevant for this configuration */
-/*liteos*/
-#define __liteos_with_lwip__
 
 /* mbed TLS feature support */
 #define MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
@@ -50,7 +48,7 @@
 #define MBEDTLS_CTR_DRBG_C
 #define MBEDTLS_ENTROPY_C
 #define MBEDTLS_MD_C
-#define MBEDTLS_NET_C
+//#define MBEDTLS_NET_C
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_SSL_CLI_C
 //#define MBEDTLS_SSL_SRV_C
@@ -60,7 +58,8 @@
 #define MBEDTLS_PLATFORM_C
 #define MBEDTLS_ENTROPY_HARDWARE_ALT
 #define MBEDTLS_NO_PLATFORM_ENTROPY
-#define MBEDTLS_TIMING_C
+#define MBEDTLS_PLATFORM_PRINTF_ALT
+#define MBEDTLS_PLATFORM_SNPRINTF_ALT
 
 #define MBEDTLS_PLATFORM_MEMORY
 //#define MBEDTLS_PLATFORM_CALLOC_MACRO        calloc /**< Default allocator macro to use, can be undefined */
@@ -77,7 +76,7 @@
  * is the "platform_entropy_poll" source, but you may want to add other ones
  * Minimum is 2 for the entropy test suite.
  */
-#define MBEDTLS_ENTROPY_MAX_SOURCES 2
+#define MBEDTLS_ENTROPY_MAX_SOURCES 1
 
 /*
  * Save RAM at the expense of interoperability: do this only if you control

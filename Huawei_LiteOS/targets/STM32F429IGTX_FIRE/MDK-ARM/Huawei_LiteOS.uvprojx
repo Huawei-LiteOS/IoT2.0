@@ -133,12 +133,12 @@
             <UseExternalTool>0</UseExternalTool>
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
-            <Capability>0</Capability>
-            <DriverSelection>-1</DriverSelection>
+            <Capability>1</Capability>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F429_439xx,USE_STDPERIPH_DRIVER,USE_MBED_TLS,MBEDTLS_CONFIG_FILE=&lt;los_mbedtls_config.h&gt;,WITH_LWIP,LWM2M_LITTLE_ENDIAN,LWM2M_CLIENT_MODE,NDEBUG</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\drivers\boards\STM32F429IGTX_FIRE\dwt;..\..\..\drivers\boards\STM32F429IGTX_FIRE\key;..\..\..\drivers\boards\STM32F429IGTX_FIRE\LAN8742A;..\..\..\drivers\boards\STM32F429IGTX_FIRE\led;..\..\..\drivers\boards\STM32F429IGTX_FIRE\usart;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\components\net\lwip-2.0.3\src\include;..\..\..\components\net\lwip_port;..\..\..\components\net\lwip_port\OS;..\..\..\components\connectivity\libcoap-4.1.2\include\coap;..\..\..\components\connectivity\libcoap-4.1.2\examples\lwip;..\..\..\components\connectivity\lwm2m\core;..\..\..\components\security\mbedtls\mbedtls_port;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include\mbedtls;..\..\..\components\connectivity\agent_tiny\comm\include;..\..\..\components\connectivity\agent_tiny\lwm2m_client;..\..\..\components\connectivity\examples;..\..\..\components\osadapter</IncludePath>
+              <IncludePath>..\Inc;..\..\..\drivers\boards\STM32F429IGTX_FIRE\dwt;..\..\..\drivers\boards\STM32F429IGTX_FIRE\key;..\..\..\drivers\boards\STM32F429IGTX_FIRE\LAN8742A;..\..\..\drivers\boards\STM32F429IGTX_FIRE\led;..\..\..\drivers\boards\STM32F429IGTX_FIRE\usart;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\components\net\lwip-2.0.3\src\include;..\..\..\components\net\lwip_port;..\..\..\components\net\lwip_port\OS;..\..\..\components\connectivity\libcoap-4.1.2\include\coap;..\..\..\components\connectivity\libcoap-4.1.2\examples\lwip;..\..\..\components\connectivity\lwm2m\core;..\..\..\components\security\mbedtls\mbedtls_port;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include\mbedtls;..\..\..\components\connectivity\agent_tiny\comm\include;..\..\..\components\connectivity\agent_tiny\lwm2m_client;..\..\..\components\connectivity\agent_tiny\examples;..\..\..\components\connectivity\agent_tiny\osadapter</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1520,6 +1520,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\security\mbedtls\mbedtls_port\entropy_hardware_poll.c</FilePath>
             </File>
+            <File>
+              <FileName>net_sockets_alt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\security\mbedtls\mbedtls_port\net_sockets_alt.c</FilePath>
+            </File>
+            <File>
+              <FileName>timing_alt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\security\mbedtls\mbedtls_port\timing_alt.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1591,11 +1601,6 @@
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\commandline.c</FilePath>
             </File>
             <File>
-              <FileName>connection.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\connection.c</FilePath>
-            </File>
-            <File>
               <FileName>platform_adapter.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\platform_adapter.c</FilePath>
@@ -1611,14 +1616,14 @@
           <GroupName>agent_demo</GroupName>
           <Files>
             <File>
-              <FileName>agent_tiny_test1.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\examples\agent_tiny_test1.c</FilePath>
-            </File>
-            <File>
               <FileName>agent_tiny_example.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\examples\agent_tiny_example.c</FilePath>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\examples\agent_tiny_example.c</FilePath>
+            </File>
+            <File>
+              <FileName>agent_tiny_test1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\examples\agent_tiny_test1.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1628,7 +1633,12 @@
             <File>
               <FileName>atiny_adapter.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\components\osadapter\atiny_adapter.c</FilePath>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\osadapter\atiny_adapter.c</FilePath>
+            </File>
+            <File>
+              <FileName>atiny_socket.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\osadapter\atiny_socket.c</FilePath>
             </File>
           </Files>
         </Group>

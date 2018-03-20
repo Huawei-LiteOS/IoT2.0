@@ -212,11 +212,6 @@ VOID task1()
   }
 #endif
 	
-#if 0
-
-    extern int test_dtls2(void);
-    test_dtls2();
-#endif
 
 		
 #if 1
@@ -224,6 +219,7 @@ VOID task1()
     lwm2m_main(1, NULL);
 #endif
 		
+
 
 
 
@@ -239,7 +235,7 @@ UINT32 creat_task1()
     task_init_param.usTaskPrio = 0;
     task_init_param.pcName = "task1";
     task_init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)task1;
-    task_init_param.uwStackSize = 0x8000;
+    task_init_param.uwStackSize = 0x1000;
 
     uwRet = LOS_TaskCreate(&g_TskHandle, &task_init_param);
     if(LOS_OK != uwRet)

@@ -7,7 +7,7 @@
 #include "dtls_conn.h"
 #include "dtls_interface.h"
 #else
-#include "connection.h"
+#include "dtls_conn.h"
 #endif
 #include <lwip/sockets.h>
 #include "internals.h"
@@ -16,6 +16,8 @@
 #include "pdu.h"
 #include "cmsis_os.h"
 #include "atiny_log.h"
+#include "object_comm.h"
+#include "dtls_conn.h"
 
 
 #define SERVER_URI_MAX_LEN  64
@@ -32,25 +34,6 @@ enum
     OBJ_APP_INDEX,
     OBJ_MAX_NUM,
 };
-
-typedef struct
-{
-    lwm2m_object_t * securityObjP;
-    lwm2m_object_t * serverObject;
-#ifndef WITH_MBEDTLS    
-    int sock;
-#endif
-#if defined (WITH_TINYDTLS)
-    dtls_connection_t * connList;
-    lwm2m_context_t * lwm2mH;
-#elif defined (WITH_MBEDTLS)
-    dtls_conn_t  *connList;
-    lwm2m_context_t * lwm2mH;
-#else
-    connection_t * connList;
-#endif
-    int addressFamily;
-} client_data_t;
 
 
 typedef struct 
@@ -83,41 +66,28 @@ int  atiny_init(atiny_param_t* atiny_params, void ** phandle)
      return ATINY_OK;
 }
     
-int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* device_info, handle_data_t *handle)
+int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* device_info, handle_data_t *handle)
 {
     int result;
     client_data_t *pdata;
     lwm2m_context_t* lwm2m_context = NULL;
     char serverUri[SERVER_URI_MAX_LEN];
     int serverId = 123;
-    char * epname; 
-    atiny_security_param_t *security_param;
-    const char * localPort;
+    atiny_security_param_t *server_object_param = atiny_params->security_params;
+    const char * localPort = server_object_param->server_port;
+    char * epname = (char *)device_info->endpoint_name;
 
         /*init objects*/
-    if(atiny_params == NULL || device_info == NULL)
+    if(atiny_params == NULL)
     {
         return ATINY_ARG_INVALID;
     }
-
-    security_param = atiny_params->security_params;
-    localPort = security_param->server_port;
-    epname = (char *)device_info->endpoint_name;
- 
-    pdata = &handle->client_data;
-    pdata->addressFamily = AF_INET;
-    pdata->sock = INVALID_SOCKET;
     
+    pdata = &handle->client_data;
+    memset(pdata, 0, sizeof(client_data_t));
+
     ATINY_LOG(LOG_INFO, "Trying to bind LWM2M Client to port %s", localPort);
     
-    #ifndef WITH_MBEDTLS    
-    pdata->sock = create_socket(localPort, pdata->addressFamily);
-    if (pdata->sock < 0)
-    {
-        ATINY_LOG(LOG_INFO, "Failed to open socket: %d %s\r\n", errno, strerror(errno));
-        return ATINY_SOCKET_CREATE_FAILED;
-    }
-    #endif 
     
     lwm2m_context = lwm2m_init(pdata);
     if (NULL == lwm2m_context)
@@ -131,13 +101,17 @@ int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* d
     #endif
 
     handle->lwm2m_context = lwm2m_context;
-    #if defined (WITH_TINYDTLS) || defined(WITH_MBEDTLS)
-    snprintf(serverUri, SERVER_URI_MAX_LEN, "coaps://%s:%s", 
-    atiny_params->security_params[0].server_ip, atiny_params->security_params[0].server_port); 
-    #else
-    snprintf(serverUri, SERVER_URI_MAX_LEN, "coap://%s:%s", 
-    atiny_params->security_params[0].server_ip, atiny_params->security_params[0].server_port); 
-    #endif
+
+	if(atiny_params->security_params[0].psk != NULL)
+	{
+		snprintf(serverUri, SERVER_URI_MAX_LEN, "coaps://%s:%s", 
+		atiny_params->security_params[0].server_ip, atiny_params->security_params[0].server_port); 		
+	}
+	else
+	{
+		snprintf(serverUri, SERVER_URI_MAX_LEN, "coap://%s:%s", 
+		atiny_params->security_params[0].server_ip, atiny_params->security_params[0].server_port); 
+	}
 
     handle->obj_array[OBJ_SECURITY_INDEX] = get_security_object(serverId, serverUri,
     atiny_params->security_params[0].psk_Id, atiny_params->security_params[0].psk, 
@@ -194,93 +168,28 @@ int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* d
     return ATINY_OK;
 }
 
-static int atiny_recv(lwm2m_context_t * contextP, struct timeval * timeoutP)
+static int lwm2m_poll(lwm2m_context_t * contextP, struct timeval * timeoutP)
 {
-    client_data_t* dataP;
-    dataP = (client_data_t*)(contextP->userData);
-        
-    #ifndef WITH_MBEDTLS
-	  int result = 0;
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(dataP->sock, &readfds); 
-    
-    result = select(FD_SETSIZE, &readfds, NULL, NULL, timeoutP);
-    if (result < 0)
-    {
-        if (errno != EINTR)
-        {
-            fprintf(stderr, "Error in select(): %d %s\r\n", errno, strerror(errno));
-        }
-    }
-    else if (result > 0)
-    {
-        uint8_t buffer[MAX_PACKET_SIZE];
-        int numBytes;  
-        if (FD_ISSET(dataP->sock, &readfds))            
-        {
-            struct sockaddr_storage addr;
-            socklen_t addrLen;
-
-            addrLen = sizeof(addr);    
-            numBytes = recvfrom(dataP->sock, buffer, MAX_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrLen);
-            if (0 > numBytes)
-            {
-                fprintf(stderr, "Error in recvfrom(): %d %s\r\n", errno, strerror(errno));
-            }
-            else if (0 < numBytes)
-            {
-                char s[INET_ADDRSTRLEN];
-                in_port_t port;
-
-            #ifdef WITH_DTLS
-                dtls_connection_t * connP;
-            #else
-                connection_t * connP;
-            #endif
-
-                struct sockaddr_in *saddr = (struct sockaddr_in *)&addr;
-                inet_ntop(saddr->sin_family, &saddr->sin_addr, s, INET_ADDRSTRLEN);
-                port = saddr->sin_port;
-                fprintf(stderr, "%d bytes received from [%s]:%hu\r\n", numBytes, s, ntohs(port));
-                          
-                output_buffer(stderr, buffer, numBytes, 0);
-
-                connP = connection_find(dataP->connList, &addr, addrLen);
-                if (connP != NULL)
-                {
-          
-                #ifdef WITH_DTLS
-                    int result = connection_handle_packet(connP, buffer, numBytes);
-                    if (0 != result)
-                    {
-                        printf("error handling message %d\n",result);
-                    }
-                #else
-                    lwm2m_handle_packet(contextP, buffer, numBytes, connP);
-                #endif
-                }
-                else
-                {
-                    fprintf(stderr, "received bytes ignored!\r\n");
-                }
-            }    
-        }
-    }
-    #else
-    dtls_conn_t *connP = dataP->connList;
-    if(connP == NULL)
-    {
-        fprintf(stderr, "connP is NULL!\r\n");
-        return ATINY_OK;;
-    }
+    client_data_t* dataP;  
+    uint8_t buffer[MAX_PACKET_SIZE] = {0};
     int numBytes;
-    uint8_t buffer[MAX_PACKET_SIZE];
-    printf("connP->ssl is %p\n",connP->ssl);
-    numBytes = dtls_read(connP->ssl,buffer, MAX_PACKET_SIZE);
-    if(numBytes > 0)
-        lwm2m_handle_packet(dataP->lwm2mH, buffer, numBytes, connP);
-    #endif
+
+    dataP = (client_data_t*)(contextP->userData);   
+    connection_t *connP = dataP->connList;
+	while (connP != NULL)
+    {
+		numBytes = lwm2m_buffer_recv(connP, buffer, MAX_PACKET_SIZE);
+		if(numBytes <= 0)
+		{
+			atiny_log("no packet arrived!");
+		}
+		else
+		{
+			lwm2m_handle_packet(contextP, buffer, numBytes, connP);
+		}
+	    connP = connP->next;
+	}
+
     return ATINY_OK;
 }
 
@@ -298,10 +207,6 @@ void atiny_detroy(void* handle)
         lwm2m_close(handle_data->lwm2m_context); 
     }
 
-    if (INVALID_SOCKET != handle_data->client_data.sock)
-    {
-        close(handle_data->client_data.sock);
-    }
     connection_free(handle_data->client_data.connList);
     
     if (handle_data->obj_array[OBJ_SECURITY_INDEX] != NULL)
@@ -385,7 +290,7 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle)
     }
     
    
-    ret = atiny_init_object(&handle->atiny_params, device_info, handle);
+    ret = atiny_init_objects(&handle->atiny_params, device_info, handle);
     if(ret != ATINY_OK)
     {
         ATINY_LOG(LOG_FATAL, "atiny_init_object fail %d", ret);
@@ -402,7 +307,7 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle)
         tv.tv_usec = 0;
         time_t sec = (time_t)tv.tv_sec;
         lwm2m_step(handle->lwm2m_context,&sec); 
-        atiny_recv(handle->lwm2m_context,&tv);
+        lwm2m_poll(handle->lwm2m_context,&tv);
     }
 
     atiny_detroy(phandle);

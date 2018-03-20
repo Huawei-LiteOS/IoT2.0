@@ -590,7 +590,7 @@ lwm2m_object_t * get_object_device(atiny_param_t *atiny_params, const char* manu
          */
         if (NULL != deviceObj->userData)
         {
-            ((device_data_t*)deviceObj->userData)->battery_level = 98;
+            ((device_data_t*)deviceObj->userData)->battery_level = PRV_BATTERY_LEVEL;
             ((device_data_t*)deviceObj->userData)->free_memory   = PRV_MEMORY_FREE;
             ((device_data_t*)deviceObj->userData)->error = PRV_ERROR_CODE;
             ((device_data_t*)deviceObj->userData)->time  = 1367491215;

@@ -25,38 +25,39 @@
 //#include <sys/stat.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-#include "ssl.h"
 #include "liblwm2m.h"
-#include "internals.h"
 
-
-#define LWM2M_STANDARD_PORT_STR "5683"
-#define LWM2M_STANDARD_PORT      5683
-#define LWM2M_DTLS_PORT_STR     "5684"
-#define LWM2M_DTLS_PORT          5684
-#define LWM2M_BSSERVER_PORT_STR "5685"
-#define LWM2M_BSSERVER_PORT      5685
 
 // after 40sec of inactivity we rehandshake
 #define DTLS_NAT_TIMEOUT 40
 
-typedef struct _dtls_conn_t
+typedef struct _connection_t
 {
-    struct _dtls_conn_t     *next;
-    mbedtls_ssl_context     *ssl;
+    struct _connection_t *  next;
+    void* net_context;
     lwm2m_object_t * securityObj;
     int securityInstId;
-    lwm2m_context_t * lwm2mH;
-    time_t lastSend; // last time a data was sent to the server (used for NAT timeouts)
-} dtls_conn_t;
+	bool dtls_flag;
+	lwm2m_context_t * lwm2mH;
+} connection_t;
 
-dtls_conn_t * connection_create(dtls_conn_t * connList, lwm2m_object_t * securityObj, int instanceId, lwm2m_context_t * lwm2mH, int addressFamily);
+connection_t * connection_create(connection_t * connList, lwm2m_object_t * securityObj, int instanceId, lwm2m_context_t * lwm2mH);
 
-void connection_free(dtls_conn_t * connList);
+void connection_free(connection_t * connList);
 
-int connection_send(dtls_conn_t *connP, uint8_t * buffer, size_t length);
-int connection_handle_packet(dtls_conn_t *connP, uint8_t * buffer, size_t length);
+//int connection_send(connection_t *connP, uint8_t * buffer, size_t length);
+
+bool lwm2m_session_is_equal(void * session1, void * session2, void * userData);
+
+uint8_t lwm2m_buffer_send(void * sessionH,
+                          uint8_t * buffer,
+                          size_t length,
+                          void * userdata);
+int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length);
+
+void lwm2m_close_connection(void * sessionH, void * userData);
+
+//int connection_handle_packet(connection_t *connP, uint8_t * buffer, size_t length);
 
 // rehandshake a connection, useful when your NAT timed out and your client has a new IP/PORT
 //int connection_rehandshake(dtls_connection_t *connP, bool sendCloseNotify);

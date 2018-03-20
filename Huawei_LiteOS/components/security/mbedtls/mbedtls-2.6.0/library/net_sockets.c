@@ -28,7 +28,7 @@
 #if defined(MBEDTLS_NET_C)
 
 #if !defined(unix) && !defined(__unix__) && !defined(__unix) && \
-    !defined(__APPLE__) && !defined(_WIN32) && !defined(__liteos_with_lwip__)
+    !defined(__APPLE__) && !defined(_WIN32)
 #error "This module only works on Unix and Windows, see MBEDTLS_NET_C in config.h"
 #endif
 
@@ -68,12 +68,6 @@
 #define close(fd)               closesocket(fd)
 
 static int wsa_init_done = 0;
-
-#elif defined(__liteos_with_lwip__)
-#include <lwip/sockets.h>
-#include <lwip/netdb.h>
-#include <lwip/errno.h>
-#define _SOCKLEN_T
 
 #else /* ( _WIN32 || _WIN32_WCE ) && !EFIX64 && !EFI32 */
 
@@ -121,7 +115,7 @@ static int net_prepare( void )
         wsa_init_done = 1;
     }
 #else
-#if !defined(EFIX64) && !defined(EFI32) && !defined(__liteos_with_lwip__)
+#if !defined(EFIX64) && !defined(EFI32)
     signal( SIGPIPE, SIG_IGN );
 #endif
 #endif
@@ -129,21 +123,16 @@ static int net_prepare( void )
 }
 
 /*
- * Initialize a context
- */
-void mbedtls_net_init( mbedtls_net_context *ctx )
-{
-    ctx->fd = -1;
-}
-
-/*
  * Initiate a TCP connection with host:port and the given protocol
  */
-int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host,
+void* mbedtls_net_connect( const char *host,
                          const char *port, int proto )
 {
     int ret;
     struct addrinfo hints, *addr_list, *cur;
+    mbedtls_net_context *ctx = mbedtls_calloc(1, sizeof(mbedtls_net_context));
+    
+    ctx->fd = -1;
 
     if( ( ret = net_prepare() ) != 0 )
         return( ret );
@@ -181,7 +170,13 @@ int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host,
 
     freeaddrinfo( addr_list );
 
-    return( ret );
+    if (ret != 0)
+    {
+        mbedtls_free(ctx);
+        ctx->fd = -1;
+    }
+
+    return ( ctx );
 }
 
 /*
@@ -279,7 +274,7 @@ static int net_would_block( const mbedtls_net_context *ctx )
     /*
      * Never return 'WOULD BLOCK' on a non-blocking socket
      */
-    if( ( fcntl( ctx->fd, F_GETFL, 0 ) & O_NONBLOCK ) != O_NONBLOCK )
+    if( ( fcntl( ctx->fd, F_GETFL ) & O_NONBLOCK ) != O_NONBLOCK )
         return( 0 );
 
     switch( errno )
@@ -401,7 +396,6 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
         }
         else
         {
-#if !defined(__liteos_with_lwip__) || (defined(__liteos_with_lwip__) && LWIP_IPV6) 
             struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) &client_addr;
             *ip_len = sizeof( addr6->sin6_addr.s6_addr );
 
@@ -409,7 +403,6 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
                 return( MBEDTLS_ERR_NET_BUFFER_TOO_SMALL );
 
             memcpy( client_ip, &addr6->sin6_addr.s6_addr, *ip_len);
-#endif
         }
     }
 
@@ -426,7 +419,7 @@ int mbedtls_net_set_block( mbedtls_net_context *ctx )
     u_long n = 0;
     return( ioctlsocket( ctx->fd, FIONBIO, &n ) );
 #else
-    return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) & ~O_NONBLOCK ) );
+    return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL ) & ~O_NONBLOCK ) );
 #endif
 }
 
@@ -437,7 +430,7 @@ int mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
     u_long n = 1;
     return( ioctlsocket( ctx->fd, FIONBIO, &n ) );
 #else
-    return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) | O_NONBLOCK ) );
+    return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL ) | O_NONBLOCK ) );
 #endif
 }
 
@@ -514,11 +507,11 @@ int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
     FD_ZERO( &read_fds );
     FD_SET( fd, &read_fds );
 
-    tv.tv_sec  = 5;//timeout / 1000;
-    tv.tv_usec = 0;//( timeout % 1000 ) * 1000;
+    tv.tv_sec  = timeout / 1000;
+    tv.tv_usec = ( timeout % 1000 ) * 1000;
 
-    //ret = select( fd + 1, &read_fds, NULL, NULL, timeout == 0 ? NULL : &tv );
-    ret = select( fd + 1, &read_fds, NULL, NULL, &tv );
+    ret = select( fd + 1, &read_fds, NULL, NULL, timeout == 0 ? NULL : &tv );
+
     /* Zero fds ready means we timed out */
     if( ret == 0 )
         return( MBEDTLS_ERR_SSL_TIMEOUT );

@@ -21,80 +21,32 @@
 #include <ctype.h>
 #include "dtls_conn.h"
 #include "dtls_interface.h"
-
-#ifdef WITH_MBEDTLS
-
+#include "atiny_socket.h"
+#include "object_comm.h"
 
 #define COAP_PORT "5683"
 #define COAPS_PORT "5684"
-#define URI_LENGTH 256
 
 
-/********************* Security Obj Helpers **********************/
-char * security_get_uri(lwm2m_object_t * obj, int instanceId, char * uriBuffer, int bufferSize){
-    int size = 1;
-    lwm2m_data_t * dataP = lwm2m_data_new(size);
-    dataP->id = 0; // security server uri
-
-    obj->readFunc(instanceId, &size, &dataP, NULL, obj);
-    if (dataP != NULL &&
-            dataP->type == LWM2M_TYPE_STRING &&
-            dataP->value.asBuffer.length > 0)
-    {
-        if (bufferSize > dataP->value.asBuffer.length){
-            memset(uriBuffer,0,dataP->value.asBuffer.length+1);
-            strncpy(uriBuffer,(char *)dataP->value.asBuffer.buffer,dataP->value.asBuffer.length);
-            lwm2m_data_free(size, dataP);
-            return uriBuffer;
-        }
-    }
-    lwm2m_data_free(size, dataP);
-    return NULL;
-}
-
-int64_t security_get_mode(lwm2m_object_t * obj, int instanceId){
-    int64_t mode;
-    int size = 1;
-    lwm2m_data_t * dataP = lwm2m_data_new(size);
-    dataP->id = 2; // security mode
-
-    obj->readFunc(instanceId, &size, &dataP, NULL, obj);
-    if (0 != lwm2m_data_decode_int(dataP,&mode))
-    {
-        lwm2m_data_free(size, dataP);
-        return mode;
-    }
-
-    lwm2m_data_free(size, dataP);
-    fprintf(stderr, "Unable to get security mode : use not secure mode");
-    return LWM2M_SECURITY_MODE_NONE;
-}
-
-
-dtls_conn_t * connection_create(dtls_conn_t * connList,
+connection_t * connection_create(connection_t * connList,
                                  lwm2m_object_t * securityObj,
                                  int instanceId,
-                                 lwm2m_context_t * lwm2mH,
-                                 int addressFamily)
+                                 lwm2m_context_t * lwm2mH)
 {
-    dtls_conn_t * connP = NULL;
-    char uriBuf[URI_LENGTH];
+    connection_t * connP = NULL;
     char * uri;
     char * host;
     char * port;
     int ret;
-
-    
     fprintf(stderr, "now come into connection_create!!!");
-    
-    //if (security_get_mode(securityObj,instanceId)
-    //                 == LWM2M_SECURITY_MODE_NONE)
-    //{
-    //    fprintf(stderr, "LWM2M_SECURITY_MODE_NONE in connection_create!!!");
-    //    return NULL;
-    //}
+  
+    security_instance_t * targetP = (security_instance_t *)LWM2M_LIST_FIND(securityObj->instanceList, instanceId);
+    if (NULL == targetP)
+    {
+        return NULL;
+    }
 
-    uri = security_get_uri(securityObj, instanceId, uriBuf, URI_LENGTH);
+    uri = targetP->uri;
     if (uri == NULL) 
     {
         fprintf(stderr, "uri is NULL!!!");
@@ -144,131 +96,179 @@ dtls_conn_t * connection_create(dtls_conn_t * connList,
         *port = 0;
         port++;
     }
-    connP = (dtls_conn_t *)lwm2m_malloc(sizeof(dtls_conn_t));
-    if(connP == NULL)
+
+	connP = (connection_t *)lwm2m_malloc(sizeof(connection_t));
+	if(connP == NULL)
+	{
+		fprintf(stderr, "connP is NULL!!!");
+		return NULL;
+	}
+	memset(connP, 0, sizeof(connection_t));
+
+  if (targetP->securityMode != LWM2M_SECURITY_MODE_NONE)
     {
-        fprintf(stderr, "connP is NULL!!!");
-        return NULL;
+        //unsigned char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x83};
+        //char *psk_identity = "666003";
+        		
+        connP->net_context = (void*)dtls_ssl_new_with_psk(targetP->secretKey, targetP->secretKeyLen, targetP->publicIdentity);
+	    if(NULL == connP->net_context)
+	    {
+	        fprintf(stderr, "connP->ssl is NULL in connection_create");
+	        lwm2m_free(connP);
+	        return NULL;
+	    }
+	    ret = dtls_shakehand(connP->net_context,host,port);
+	    
+	    if(ret != 0)
+	    {
+	        fprintf(stderr, "ret is %d in connection_create",ret);
+	        lwm2m_free(connP);
+	        return NULL;
+	    }
+			  connP->dtls_flag = true;			
     }
-    memset(connP, 0, sizeof(dtls_conn_t));
-    connP->next = connList;
-    connP->lastSend = lwm2m_gettime();
+    else
+    {
+        // no dtls session
+        connP->net_context = atiny_net_connect(host,port, ATINY_PROTO_UDP);
+				if(NULL == connP->net_context)
+				{
+						fprintf(stderr, "connP->ssl is NULL in connection_create");
+						lwm2m_free(connP);
+						return NULL;
+				}
+			  connP->dtls_flag = false;
+    }
+	connP->next = connList;
     connP->securityObj = securityObj;
-    connP->securityInstId = instanceId;
-    connP->lwm2mH = lwm2mH;
-
-    unsigned char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x83};
-    char *psk_identity = "666003";
-    
-    fprintf(stderr, "!!!!host is %s , port is %s,in connection_create",host,port);
-    
-    connP->ssl = dtls_ssl_new_with_psk(psk,16,psk_identity);
-    printf("connP->ssl is %p in connection_create\n",connP->ssl);
-    if(NULL == connP->ssl)
-    {
-        fprintf(stderr, "connP->ssl is NULL in connection_create");
-        lwm2m_free(connP);
-        return NULL;
-    }
-    ret = dtls_shakehand(connP->ssl,host,port);
-    
-    if(ret)
-    {
-        fprintf(stderr, "ret is %d in connection_create",ret);
-        lwm2m_free(connP);
-        return NULL;
-    }
-
-    
-    
+	connP->securityInstId = instanceId;
+	connP->lwm2mH = lwm2mH;
 
     return connP;
 }
 
-void connection_free(dtls_conn_t * connList)
+void connection_free(connection_t * connP)
 {
-    //add code here;
+    if (connP->dtls_flag == false) {
+        // no security
+        atiny_net_close(connP->net_context);
+    }
+	else
+    {
+		dtls_ssl_destroy(connP->net_context);
+    }
 }
 
-int connection_send(dtls_conn_t *connP, uint8_t * buffer, size_t length){
+void * lwm2m_connect_server(uint16_t secObjInstID, void * userData)
+{
+  client_data_t * dataP;
+  lwm2m_list_t * instance;
+  connection_t * newConnP = NULL;
+  dataP = (client_data_t *)userData;
+  lwm2m_object_t  * securityObj = dataP->securityObjP;
 
-    printf("call dtls_write in connection_send, length is %d\n",length);
-    
-    if (connP->ssl == NULL) {
+  fprintf(stderr, "Now come into Connection creation in lwm2m_connect_server.\n");
+  
+  instance = LWM2M_LIST_FIND(dataP->securityObjP->instanceList, secObjInstID);
+  if (instance == NULL)
+  {
+      return NULL;
+  }
+
+
+  newConnP = connection_create(dataP->connList, securityObj, instance->id, dataP->lwm2mH);
+  if (newConnP == NULL)
+  {
+      fprintf(stderr, "Connection creation failed.\n");     
+      return NULL;
+  }
+
+  fprintf(stderr, "Connection creation successfully in lwm2m_connect_server.\n");
+  
+  dataP->connList = newConnP;
+  return (void *)newConnP;
+}
+
+void lwm2m_close_connection(void * sessionH, void * userData)
+{
+    client_data_t * app_data;
+    connection_t * targetP;
+
+    app_data = (client_data_t *)userData;
+    targetP = (connection_t *)sessionH;
+
+    if (targetP == app_data->connList)
+    {
+        app_data->connList = targetP->next;
+		connection_free(targetP);
+        lwm2m_free(targetP);
+    }
+    else
+    {
+        connection_t * parentP;
+
+        parentP = app_data->connList;
+        while (parentP != NULL && parentP->next != targetP)
+        {
+            parentP = parentP->next;
+        }
+        if (parentP != NULL)
+        {
+            parentP->next = targetP->next;
+			connection_free(targetP);
+            lwm2m_free(targetP);
+        }
+    }
+}
+
+
+int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length)
+{
+    connection_t * connP = (connection_t*) sessionH;
+
+    if (connP->dtls_flag == false) {
         // no security
-        return -1;
+        return atiny_net_recv(connP->net_context, buffer, length);
     } 
     else 
     {
-#if 0
-        if (DTLS_NAT_TIMEOUT > 0 && (lwm2m_gettime() - connP->lastSend) > DTLS_NAT_TIMEOUT)
-        {
-            // we need to rehandhake because our source IP/port probably changed for the server
-            if ( connection_rehandshake(connP, false) != 0 )
-            {
-                printf("can't send due to rehandshake error\n");
-                return -1;
-            }
-        }
-#endif 
-
-        return dtls_write(connP->ssl, buffer, length);
+        return dtls_read(connP->net_context, buffer, length);
         
     }
-
-
 }
-
-#if 0
-int connection_rehandshake(dtls_connection_t *connP, bool sendCloseNotify) {
-
-    // if not a dtls connection we do nothing
-    if (connP->dtlsSession == NULL) {
-        return 0;
-    }
-
-    // reset current session
-    dtls_peer_t * peer = dtls_get_peer(connP->dtlsContext, connP->dtlsSession);
-    if (peer != NULL)
-    {
-        if (!sendCloseNotify)
-        {
-            peer->state =  DTLS_STATE_CLOSED;
-        }
-        dtls_reset_peer(connP->dtlsContext, peer);
-    }
-
-    // start a fresh handshake
-    int result = dtls_connect(connP->dtlsContext, connP->dtlsSession);
-    if (result !=0) {
-         printf("error dtls reconnection %d\n",result);
-    }
-    return result;
-}
-#endif
 
 uint8_t lwm2m_buffer_send(void * sessionH,
                           uint8_t * buffer,
                           size_t length,
                           void * userdata)
 {
-    dtls_conn_t * connP = (dtls_conn_t*) sessionH;
+    connection_t * connP = (connection_t*) sessionH;
 
     if (connP == NULL)
     {
-        fprintf(stderr, "#> failed sending %lu bytes, missing connection\r\n", length);
+        fprintf(stderr, "#> failed sending %lu bytes, missing connection\r\n",(unsigned long)length);
         return COAP_500_INTERNAL_SERVER_ERROR ;
     }
 
     printf("call connection_send in lwm2m_buffer_send, length is %d\n",length);
-
+    
+    if (connP->dtls_flag == false) {
+        // no security
+        return atiny_net_send(connP->net_context, buffer, length);
+    } 
+    else 
+    {
+        return dtls_write(connP->net_context, buffer, length);
+        
+    }
+/*
     if (-1 == connection_send(connP, buffer, length))
     {
-        fprintf(stderr, "#> failed sending %lu bytes\r\n", length);
+        fprintf(stderr, "#> failed sending %lu bytes\r\n", (unsigned long)length);
         return COAP_500_INTERNAL_SERVER_ERROR ;
     }
-
-    return COAP_NO_ERROR;
+*/
+    //return COAP_NO_ERROR;
 }
 
 bool lwm2m_session_is_equal(void * session1,
@@ -277,6 +277,4 @@ bool lwm2m_session_is_equal(void * session1,
 {
     return (session1 == session2);
 }
-
-#endif
 

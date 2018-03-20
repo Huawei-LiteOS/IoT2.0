@@ -30,7 +30,39 @@
 #include "liblwm2m.h"
 #include "internals.h"
 #include "agenttiny.h"
+#include "dtls_conn.h"
 extern int g_reboot;
+
+typedef struct
+{
+    lwm2m_object_t * securityObjP;
+    lwm2m_object_t * serverObject;
+    connection_t  *connList;
+    lwm2m_context_t * lwm2mH;
+} client_data_t;
+
+typedef struct _security_instance_
+{
+    struct _security_instance_ * next;        // matches lwm2m_list_t::next
+    uint16_t                     instanceId;  // matches lwm2m_list_t::id
+    char *                       uri;
+    bool                         isBootstrap;    
+    uint8_t                      securityMode;
+    char *                       publicIdentity;
+    uint16_t                     publicIdLen;
+    char *                       serverPublicKey;
+    uint16_t                     serverPublicKeyLen;
+    char *                       secretKey;
+    uint16_t                     secretKeyLen;
+    uint8_t                      smsSecurityMode;
+    char *                       smsParams; // SMS binding key parameters
+    uint16_t                     smsParamsLen;
+    char *                       smsSecret; // SMS binding secret key
+    uint16_t                     smsSecretLen;
+    uint16_t                     shortID;
+    uint32_t                     clientHoldOffTime;
+    uint32_t                     bootstrapServerAccountTimeout;
+} security_instance_t;
 
 typedef struct _data_node_t
 { 
