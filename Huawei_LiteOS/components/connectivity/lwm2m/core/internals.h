@@ -61,9 +61,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-//#include "er-coap-13/er-coap-13.h"
-#include "pdu.h"
-#include "option.h"
+#include "er-coap-13/er-coap-13.h"
+
 #include "los_memory.h"
 
 #ifdef LWM2M_WITH_LOGS
@@ -282,14 +281,14 @@ lwm2m_transaction_t * transaction_new(void * sessionH, unsigned char method, cha
 int transaction_send(lwm2m_context_t * contextP, lwm2m_transaction_t * transacP);
 void transaction_free(lwm2m_transaction_t * transacP);
 void transaction_remove(lwm2m_context_t * contextP, lwm2m_transaction_t * transacP);
-bool transaction_handleResponse(lwm2m_context_t * contextP, void * fromSessionH, coap_pdu_t * message, coap_pdu_t * response);
+bool transaction_handleResponse(lwm2m_context_t * contextP, void * fromSessionH, coap_packet_t * message, coap_packet_t * response);
 void transaction_step(lwm2m_context_t * contextP, time_t currentTime, time_t * timeoutP);
 
 // defined in management.c
-uint8_t dm_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, coap_pdu_t * message, coap_pdu_t * response);
+uint8_t dm_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, coap_packet_t * message, coap_packet_t * response);
 
 // defined in observe.c
-uint8_t observe_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, int size, lwm2m_data_t * dataP, coap_pdu_t * message, coap_pdu_t * response);
+uint8_t observe_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, int size, lwm2m_data_t * dataP, coap_packet_t * message, coap_packet_t * response);
 void observe_cancel(lwm2m_context_t * contextP, uint16_t mid, void * fromSessionH);
 uint8_t observe_setParameters(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, lwm2m_attributes_t * attrP);
 void observe_step(lwm2m_context_t * contextP, time_t currentTime, time_t * timeoutP);
@@ -308,7 +307,7 @@ void registration_step(lwm2m_context_t * contextP, time_t currentTime, time_t * 
 lwm2m_status_t registration_getStatus(lwm2m_context_t * contextP);
 
 // defined in packet.c
-uint8_t message_send(lwm2m_context_t * contextP, coap_pdu_t * message, void * sessionH);
+uint8_t message_send(lwm2m_context_t * contextP, coap_packet_t * message, void * sessionH);
 
 // defined in bootstrap.c
 void bootstrap_step(lwm2m_context_t * contextP, uint32_t currentTime, time_t* timeoutP);

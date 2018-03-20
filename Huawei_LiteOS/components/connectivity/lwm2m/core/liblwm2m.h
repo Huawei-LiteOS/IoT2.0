@@ -598,6 +598,8 @@ struct _lwm2m_transaction_
     uint8_t  retrans_counter;
     time_t   retrans_time;
     void * message;
+    uint16_t buffer_len;
+    uint8_t * buffer;
     lwm2m_data_cfg_t   cfg;
     lwm2m_transaction_callback_t callback;
     void * userData;

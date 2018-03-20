@@ -105,7 +105,7 @@ Contains code snippets which are:
  */
 
 #include "internals.h"
-#include "pdu.h"
+//#include "pdu.h"
 #include "commandline.h"
 
 
@@ -117,31 +117,27 @@ Contains code snippets which are:
 #define COAP_RESPONSE_TIMEOUT_BACKOFF_MASK  ((CLOCK_SECOND * COAP_RESPONSE_TIMEOUT * (COAP_RESPONSE_RANDOM_FACTOR - 1)) + 1.5)
 
 static int prv_checkFinished(lwm2m_transaction_t * transacP,
-                             coap_pdu_t * receivedMessage)
+                             coap_packet_t * receivedMessage)
 {
     int len;
     const uint8_t* token;
-    coap_pdu_t * transactionMessage = transacP->message;
+    coap_packet_t * transactionMessage = transacP->message;
 
-    if (COAP_REQUEST_DELETE < transactionMessage->hdr->code)
+    if (COAP_DELETE < transactionMessage->code)
     {
         // response
         return transacP->ack_received ? 1 : 0;
     }
-	  coap_opt_t *block_opt;
-    coap_opt_iterator_t opt_iter;
-    block_opt = coap_check_option(transactionMessage, COAP_OPTION_TOKEN, &opt_iter);
-		if(!block_opt)
-    //if (!IS_OPTION(transactionMessage, COAP_OPTION_TOKEN))
+    if (!IS_OPTION(transactionMessage, COAP_OPTION_TOKEN))
     {
         // request without token
         return transacP->ack_received ? 1 : 0;
     }
 
     len = coap_get_header_token(receivedMessage, &token);
-    if (transactionMessage->hdr->token_length == len)
+    if (transactionMessage->token_len == len)
     {
-        if (memcmp(transactionMessage->hdr->token, token, len)==0) return 1;
+        if (memcmp(transactionMessage->token, token, len)==0) return 1;
     }
 
     return 0;
@@ -170,8 +166,10 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
     if (NULL == transacP) return NULL;
     memset(transacP, 0, sizeof(lwm2m_transaction_t));
 
-    transacP->message = (void *)coap_pdu_init(COAP_MESSAGE_CON, method, 
-	      mID, COAP_MAX_PDU_SIZE);
+    transacP->message = lwm2m_malloc(sizeof(coap_packet_t));
+    if (NULL == transacP->message) goto error;
+
+    coap_init_message(transacP->message, COAP_TYPE_CON, method, mID);
 
     transacP->peerH = sessionH;
 
@@ -184,8 +182,8 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
     }
     if (NULL != uriP)
     {
-
         char stringID[LWM2M_STRING_ID_MAX_LEN];
+
         result = utils_intToText(uriP->objectId, (uint8_t*)stringID, LWM2M_STRING_ID_MAX_LEN);
         if (result == 0) goto error;
         stringID[result] = 0;
@@ -217,8 +215,7 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
     {
         if (NULL != token)
         {
-            //coap_set_header_token(transacP->message, token, token_len);
-			      coap_add_token((coap_pdu_t *)(transacP->message), token_len, token);
+            coap_set_header_token(transacP->message, token, token_len);
         }
         else {
             // generate a token
@@ -233,8 +230,7 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
             temp_token[4] = tv_sec >> 16;
             temp_token[5] = tv_sec >> 24;
             // use just the provided amount of bytes
-            //coap_set_header_token(transacP->message, temp_token, token_len);
-            coap_add_token((coap_pdu_t *)(transacP->message), token_len, temp_token);
+            coap_set_header_token(transacP->message, temp_token, token_len);
         }
     }
 
@@ -243,8 +239,6 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
 
 error:
     LOG("Exiting on failure");
-    coap_delete_pdu(transacP->message);
-    transacP->message = NULL;
     lwm2m_free(transacP);
     return NULL;
 }
@@ -254,9 +248,11 @@ void transaction_free(lwm2m_transaction_t * transacP)
     LOG("Entering");
     if (transacP->message)
     {
-       coap_delete_pdu((coap_pdu_t *)transacP->message);
+       coap_free_header(transacP->message);
+       lwm2m_free(transacP->message);
     }
 
+    if (transacP->buffer) lwm2m_free(transacP->buffer);
     lwm2m_free(transacP);
 }
 
@@ -270,8 +266,8 @@ void transaction_remove(lwm2m_context_t * contextP,
 
 bool transaction_handleResponse(lwm2m_context_t * contextP,
                                  void * fromSessionH,
-                                 coap_pdu_t * message,
-                                 coap_pdu_t * response)
+                                 coap_packet_t * message,
+                                 coap_packet_t * response)
 {
     bool found = false;
     bool reset = false;
@@ -286,13 +282,13 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
         {
             if (!transacP->ack_received)
             {
-                if ((COAP_MESSAGE_ACK == message->hdr->type) || (COAP_MESSAGE_RST == message->hdr->type))
+                if ((COAP_TYPE_ACK == message->type) || (COAP_TYPE_RST == message->type))
                 {
-                    if (transacP->mID == message->hdr->id)
+                    if (transacP->mID == message->mid)
 	                {
     	                found = true;
         	            transacP->ack_received = true;
-            	        reset = COAP_MESSAGE_RST == message->hdr->type;
+                        reset = COAP_TYPE_RST == message->type;
             	    }
                 }
             }
@@ -304,12 +300,13 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
                 // So we resend transaction that were denied for authentication reason.
                 if (!reset)
                 {
-                    if (COAP_MESSAGE_CON == message->hdr->type && NULL != response)
+                    if (COAP_TYPE_CON == message->type && NULL != response)
                     {
+                        coap_init_message(response, COAP_TYPE_ACK, 0, message->mid);
                         message_send(contextP, response, fromSessionH);
                     }
                 
-	            if ((COAP_401_UNAUTHORIZED == message->hdr->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
+	                if ((COAP_401_UNAUTHORIZED == message->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
     	            {
         	        transacP->ack_received = false;
             	        transacP->retrans_time += COAP_RESPONSE_TIMEOUT;
@@ -354,7 +351,31 @@ int transaction_send(lwm2m_context_t * contextP,
     bool maxRetriesReached = false;
 
     LOG("Entering");
+    if (transacP->buffer == NULL)
+    {
+        transacP->buffer_len = coap_serialize_get_size(transacP->message);
+        if (transacP->buffer_len == 0)
+        {
+           transaction_remove(contextP, transacP);
+           return COAP_500_INTERNAL_SERVER_ERROR;
+        }
 
+        transacP->buffer = (uint8_t*)lwm2m_malloc(transacP->buffer_len);
+        if (transacP->buffer == NULL)
+        {
+           transaction_remove(contextP, transacP);
+           return COAP_500_INTERNAL_SERVER_ERROR;
+        }
+
+        transacP->buffer_len = coap_serialize_message(transacP->message, transacP->buffer);
+        if (transacP->buffer_len == 0)
+        {
+            lwm2m_free(transacP->buffer);
+            transacP->buffer = NULL;
+            transaction_remove(contextP, transacP);
+            return COAP_500_INTERNAL_SERVER_ERROR;
+        }
+    }
 
     if (!transacP->ack_received)
     {
@@ -381,9 +402,8 @@ int transaction_send(lwm2m_context_t * contextP,
 
         if (COAP_MAX_RETRANSMIT + 1 >= transacP->retrans_counter)
         {
-            coap_pdu_t * pdu = (coap_pdu_t *)(transacP->message);
-            (void)lwm2m_buffer_send(transacP->peerH, (uint8_t *)(pdu-> hdr), pdu->length, contextP->userData);
-            output_buffer(stderr, (uint8_t *)(pdu-> hdr), pdu->length, 0);
+            (void)lwm2m_buffer_send(transacP->peerH, transacP->buffer, transacP->buffer_len, contextP->userData);
+            output_buffer(stderr, (uint8_t *)(transacP->buffer), transacP->buffer_len, 0);
             transacP->retrans_time += timeout;
             transacP->retrans_counter += 1;
         }

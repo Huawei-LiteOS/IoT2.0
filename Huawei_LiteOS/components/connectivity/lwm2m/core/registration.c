@@ -190,7 +190,7 @@ static int prv_getRegistrationQuery(lwm2m_context_t * contextP,
 static void prv_handleRegistrationReply(lwm2m_transaction_t * transacP,
                                         void * message)
 {
-    coap_pdu_t * packet = (coap_pdu_t *)message;
+    coap_packet_t * packet = (coap_packet_t *)message;
     lwm2m_server_t * targetP = (lwm2m_server_t *)(transacP->userData);
 
     if (targetP->status == STATE_REG_PENDING)
@@ -200,7 +200,7 @@ static void prv_handleRegistrationReply(lwm2m_transaction_t * transacP,
         {
             targetP->registration = tv_sec;
         }
-        if (packet != NULL && packet->hdr->code == COAP_201_CREATED)
+        if (packet != NULL && packet->code == COAP_201_CREATED)
         {
             targetP->status = STATE_REGISTERED;
             if (NULL != targetP->location)
@@ -271,22 +271,19 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
         return COAP_503_SERVICE_UNAVAILABLE;
     }
 
-    transaction = transaction_new(server->sessionH, COAP_REQUEST_POST, NULL, NULL, contextP->nextMID++, 4, NULL);
+    transaction = transaction_new(server->sessionH, COAP_POST, NULL, NULL, contextP->nextMID++, 4, NULL);
     if (transaction == NULL)
     {
         lwm2m_free(payload);
         lwm2m_free(query);
         return COAP_503_SERVICE_UNAVAILABLE;
     }
-	coap_pdu_t *pdu = (coap_pdu_t *)(transaction->message);
+//	coap_pdu_t *pdu = (coap_pdu_t *)(transaction->message);
 
-    
-    coap_set_header_uri_path(transaction->message, "/"URI_REGISTRATION_SEGMENT);//rd
-    unsigned char con[1] = {LWM2M_CONTENT_LINK};
-    coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, 1, con);
-	
-    coap_set_header_uri_query(pdu, query);
-    coap_add_data(pdu, payload_length, payload);
+    coap_set_header_uri_path(transaction->message, "/"URI_REGISTRATION_SEGMENT);
+    coap_set_header_uri_query(transaction->message, query);
+    coap_set_header_content_type(transaction->message, LWM2M_CONTENT_LINK);
+    coap_set_payload(transaction->message, payload, payload_length);
 
     transaction->callback = prv_handleRegistrationReply;
     transaction->userData = (void *) server;
@@ -310,7 +307,7 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
 static void prv_handleRegistrationUpdateReply(lwm2m_transaction_t * transacP,
                                               void * message)
 {
-    coap_pdu_t * packet = (coap_pdu_t *)message;
+    coap_packet_t * packet = (coap_packet_t *)message;
     lwm2m_server_t * targetP = (lwm2m_server_t *)(transacP->userData);
 
     if (targetP->status == STATE_REG_UPDATE_PENDING)
@@ -320,7 +317,7 @@ static void prv_handleRegistrationUpdateReply(lwm2m_transaction_t * transacP,
         {
             targetP->registration = tv_sec;
         }
-        if (packet != NULL && packet->hdr->code == COAP_204_CHANGED)
+        if (packet != NULL && packet->code == COAP_204_CHANGED)
         {
             targetP->status = STATE_REGISTERED;
             LOG("Registration update successful");
@@ -341,7 +338,7 @@ static int prv_updateRegistration(lwm2m_context_t * contextP,
     uint8_t * payload = NULL;
     int payload_length;
 
-    transaction = transaction_new(server->sessionH, COAP_REQUEST_POST, NULL, NULL, contextP->nextMID++, 4, NULL);
+    transaction = transaction_new(server->sessionH, COAP_POST, NULL, NULL, contextP->nextMID++, 4, NULL);
     if (transaction == NULL) return COAP_500_INTERNAL_SERVER_ERROR;
 
     coap_set_header_uri_path(transaction->message, server->location);
@@ -359,8 +356,7 @@ static int prv_updateRegistration(lwm2m_context_t * contextP,
             lwm2m_free(payload);
             return COAP_500_INTERNAL_SERVER_ERROR;
         }
-        //coap_set_payload(transaction->message, payload, payload_length);
-				coap_add_data(transaction->message, payload_length, payload);
+        coap_set_payload(transaction->message, payload, payload_length);
     }
 
     transaction->callback = prv_handleRegistrationUpdateReply;
@@ -569,7 +565,7 @@ void registration_deregister(lwm2m_context_t * contextP,
         return;
     }
 
-    transaction = transaction_new(serverP->sessionH, COAP_REQUEST_DELETE, NULL, NULL, contextP->nextMID++, 4, NULL);
+    transaction = transaction_new(serverP->sessionH, COAP_DELETE, NULL, NULL, contextP->nextMID++, 4, NULL);
     if (transaction == NULL) return;
 
     coap_set_header_uri_path(transaction->message, serverP->location);

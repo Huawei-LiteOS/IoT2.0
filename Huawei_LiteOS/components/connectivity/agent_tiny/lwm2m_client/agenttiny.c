@@ -13,7 +13,7 @@
 #include "internals.h"
 #include "agenttiny.h"
 #include "agent_list.h"
-#include "pdu.h"
+//#include "pdu.h"
 #include "cmsis_os.h"
 #include "atiny_log.h"
 #include "object_comm.h"
