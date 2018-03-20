@@ -171,20 +171,24 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
     // a simple switch structure is used to respond at the specified resource asked
     switch (dataP->id)
     {
+    char str[30] = "";
     case RES_O_MANUFACTURER:
 		lwm2m_data_encode_string(devDataP->device_manufacutre, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_MODEL_NUMBER:
-        lwm2m_data_encode_string(PRV_MODEL_NUMBER, dataP);
+		atiny_cmd_ioctl(ATINY_GET_MODEL_NUMBER, str, NULL);
+        lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_SERIAL_NUMBER:
-        lwm2m_data_encode_string(PRV_SERIAL_NUMBER, dataP);
+		atiny_cmd_ioctl(ATINY_GET_SERIAL_NUMBER, str, NULL);
+        lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_FIRMWARE_VERSION:
-        lwm2m_data_encode_string(PRV_FIRMWARE_VERSION, dataP);
+		atiny_cmd_ioctl(ATINY_GET_FIRMWARE_VER, str, strlen(str));
+        lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
     case RES_M_REBOOT:
@@ -196,13 +200,16 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
     case RES_O_AVL_POWER_SOURCES: 
     {
         lwm2m_data_t * subTlvP;
+		int power;
 
         subTlvP = lwm2m_data_new(2);
 
         subTlvP[0].id = 0;
-        lwm2m_data_encode_int(PRV_POWER_SOURCE_1, subTlvP);
+		atiny_cmd_ioctl(ATINY_GET_POWER_SOURCE_1, (char*)&power, sizeof(int));
+        lwm2m_data_encode_int(power, subTlvP);
         subTlvP[1].id = 1;
-        lwm2m_data_encode_int(PRV_POWER_SOURCE_2, subTlvP + 1);
+		atiny_cmd_ioctl(ATINY_GET_POWER_SOURCE_2, (char*)&power, sizeof(int));
+        lwm2m_data_encode_int(power, subTlvP + 1);
 
         lwm2m_data_encode_instances(subTlvP, 2, dataP);
 
@@ -235,9 +242,12 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         subTlvP = lwm2m_data_new(2);
 
         subTlvP[0].id = 0;
-        lwm2m_data_encode_int(PRV_POWER_CURRENT_1, &subTlvP[0]);
+		int power;
+        atiny_cmd_ioctl(ATINY_GET_POWER_CURRENT_1, (char*)&power, sizeof(int));
+        lwm2m_data_encode_int(power, &subTlvP[0]);
         subTlvP[1].id = 1;
-        lwm2m_data_encode_int(PRV_POWER_CURRENT_2, &subTlvP[1]);
+		atiny_cmd_ioctl(ATINY_GET_POWER_CURRENT_2, (char*)&power, sizeof(int));
+        lwm2m_data_encode_int(power, &subTlvP[1]);
  
         lwm2m_data_encode_instances(subTlvP, 2, dataP);
 
@@ -245,11 +255,15 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
     }
 
     case RES_O_BATTERY_LEVEL:
-        lwm2m_data_encode_int(devDataP->battery_level, dataP);
+		int battery_level;
+        atiny_cmd_ioctl(ATINY_GET_BATERRY_LEVEL, (char*)&battery_level, sizeof(int));
+        lwm2m_data_encode_int(battery_level, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_MEMORY_FREE:
-        lwm2m_data_encode_int(devDataP->free_memory, dataP);
+		int free_memory;
+        atiny_cmd_ioctl(ATINY_GET_MEMORY_FREE, (char*)&free_memory, sizeof(int));
+        lwm2m_data_encode_int(free_memory, dataP);
         return COAP_205_CONTENT;
 
     case RES_M_ERROR_CODE:
@@ -259,7 +273,9 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         subTlvP = lwm2m_data_new(1);
 
         subTlvP[0].id = 0;
-        lwm2m_data_encode_int(devDataP->error, subTlvP);
+		int err;
+		atiny_cmd_ioctl(ATINY_GET_DEV_ERR, (char*)&err, sizeof(int));
+        lwm2m_data_encode_int(err, subTlvP);
 
         lwm2m_data_encode_instances(subTlvP, 1, dataP);
 
@@ -282,7 +298,8 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         return COAP_205_CONTENT;
       
     case RES_M_BINDING_MODES:
-        lwm2m_data_encode_string(PRV_BINDING_MODE, dataP);
+		atiny_cmd_ioctl(ATINY_GET_BINDING_MODES, str, 10);
+        lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
     default:
@@ -515,7 +532,7 @@ static uint8_t prv_device_execute(uint16_t instanceId,
         return COAP_204_CHANGED;
 		}
     case RES_O_FACTORY_RESET:
-        fprintf(stdout, "\n\t FACTORY RESET\r\n\n");
+		atiny_cmd_ioctl(ATINY_DO_FACTORY_RESET, NULL, 0);
         return COAP_204_CHANGED;
     case RES_O_RESET_ERROR_CODE:
         fprintf(stdout, "\n\t RESET ERROR CODE\r\n\n");
