@@ -19,10 +19,19 @@
 
 
 #define SERVER_URI_MAX_LEN  64
-#define OBJ_PLATFORM_IDX 5
-#define OBJ_COUNT 6
-lwm2m_object_t* ATobjArray[OBJ_COUNT];
-#define MAX_PACKET_SIZE 1024
+#define MAX_PACKET_SIZE   1024
+#define INVALID_SOCKET    (-1) 
+
+enum 
+{
+    OBJ_SECURITY_INDEX = 0,
+    OBJ_SERVER_INDEX,
+    OBJ_DEVICE_INDEX,
+    OBJ_FIRMWARE_INDEX,
+    OBJ_CONNECT_INDEX,
+    OBJ_APP_INDEX,
+    OBJ_MAX_NUM,
+};
 
 typedef struct
 {
@@ -35,7 +44,7 @@ typedef struct
     dtls_connection_t * connList;
     lwm2m_context_t * lwm2mH;
 #elif defined (WITH_MBEDTLS)
-    dtls_conn_t  *connList;/*???¡ã???¡ì3?¨°?????¦Ì?¦Ì??¡¤*/
+    dtls_conn_t  *connList;
     lwm2m_context_t * lwm2mH;
 #else
     connection_t * connList;
@@ -47,39 +56,33 @@ typedef struct
 typedef struct 
 {
     lwm2m_context_t * lwm2m_context;
-    atiny_param_t atiny_params;
-    client_data_t client_data;
+    atiny_param_t     atiny_params;
+    client_data_t     client_data;
+    lwm2m_object_t*   obj_array[OBJ_MAX_NUM];
     int atiny_quit;
 }handle_data_t;
 
 
+
 extern void observe_handleAck(lwm2m_transaction_t * transacP, void * message);
 
+static handle_data_t g_atiny_handle;
 
 int  atiny_init(atiny_param_t* atiny_params, void ** phandle)
 {
-     handle_data_t *handle = NULL;
-
      if (NULL == atiny_params || NULL == phandle)
      {
-	    ATINY_LOG(LOG_FATAL, "invalid args");
+	    ATINY_LOG(LOG_FATAL, "Invalid args");
         return ATINY_ARG_INVALID;
      }
 
-     handle = lwm2m_malloc(sizeof(client_data_t));
-     if(NULL == handle )
-     {
-        ATINY_LOG(LOG_FATAL, "lwm2m_malloc fail");
-        return ATINY_MALLOC_FAILED;
-     }
+     memset((void*)&g_atiny_handle, 0,  sizeof(handle_data_t));
 
-     memset(handle, 0,  sizeof(handle));
-
-     handle->atiny_params = *atiny_params;
-     *phandle = handle;
-     return ATINY_OK;     
+     g_atiny_handle.atiny_params = *atiny_params;
+     *phandle = &g_atiny_handle;
+     return ATINY_OK;
 }
-
+    
 int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* device_info, handle_data_t *handle)
 {
     int result;
@@ -87,21 +90,24 @@ int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* d
     lwm2m_context_t* lwm2m_context = NULL;
     char serverUri[SERVER_URI_MAX_LEN];
     int serverId = 123;
-    atiny_security_param_t *server_object_param = atiny_params->security_params;
-    const char * localPort = server_object_param->server_port;
-    char * epname = (char *)device_info->endpoint_name;
+    char * epname; 
+    atiny_security_param_t *security_param;
+    const char * localPort;
 
         /*init objects*/
-    if(atiny_params == NULL)
+    if(atiny_params == NULL || device_info == NULL)
     {
         return ATINY_ARG_INVALID;
     }
-    
+
+    security_param = atiny_params->security_params;
+    localPort = security_param->server_port;
+    epname = (char *)device_info->endpoint_name;
+ 
     pdata = &handle->client_data;
-    memset(pdata, 0, sizeof(client_data_t));
-
     pdata->addressFamily = AF_INET;
-
+    pdata->sock = INVALID_SOCKET;
+    
     ATINY_LOG(LOG_INFO, "Trying to bind LWM2M Client to port %s", localPort);
     
     #ifndef WITH_MBEDTLS    
@@ -109,7 +115,7 @@ int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* d
     if (pdata->sock < 0)
     {
         ATINY_LOG(LOG_INFO, "Failed to open socket: %d %s\r\n", errno, strerror(errno));
-        return -1;
+        return ATINY_SOCKET_CREATE_FAILED;
     }
     #endif 
     
@@ -133,61 +139,58 @@ int  atiny_init_object(atiny_param_t* atiny_params, const atiny_device_info_t* d
     atiny_params->security_params[0].server_ip, atiny_params->security_params[0].server_port); 
     #endif
 
-    ATobjArray[0] = get_security_object(serverId, serverUri,
+    handle->obj_array[OBJ_SECURITY_INDEX] = get_security_object(serverId, serverUri,
     atiny_params->security_params[0].psk_Id, atiny_params->security_params[0].psk, 
     atiny_params->security_params[0].psk_len, false);
-    if (NULL == ATobjArray[0])
+    if (NULL ==  handle->obj_array[OBJ_SECURITY_INDEX])
     {
         ATINY_LOG(LOG_FATAL, "Failed to create server object");
         return ATINY_MALLOC_FAILED;
     }
+    pdata->securityObjP = handle->obj_array[OBJ_SECURITY_INDEX];
 
-    pdata->securityObjP = ATobjArray[0];
-
-    ATobjArray[1] = get_server_object(serverId, atiny_params->server_params.binding,
+    handle->obj_array[OBJ_SERVER_INDEX] = get_server_object(serverId, atiny_params->server_params.binding,
     atiny_params->server_params.life_time, atiny_params->server_params.storing);
-    if(NULL == ATobjArray[1])
+    if(NULL == handle->obj_array[OBJ_SERVER_INDEX])
     {
         ATINY_LOG(LOG_FATAL, "Failed to create server object");
         return ATINY_MALLOC_FAILED;
     }
 
-    ATobjArray[2] = get_object_device(atiny_params, device_info->manufacturer);
-    if(NULL == ATobjArray[2])
+    handle->obj_array[OBJ_DEVICE_INDEX] = get_object_device(atiny_params, device_info->manufacturer);
+    if(NULL == handle->obj_array[OBJ_DEVICE_INDEX])
     {   
         ATINY_LOG(LOG_FATAL, "Failed to create server object");
         return ATINY_MALLOC_FAILED;
     }
     
-    ATobjArray[3] = get_object_firmware(atiny_params);
-    if (NULL == ATobjArray[3])
+    handle->obj_array[OBJ_FIRMWARE_INDEX] = get_object_firmware(atiny_params);
+    if (NULL == handle->obj_array[OBJ_FIRMWARE_INDEX])
     {
         ATINY_LOG(LOG_FATAL, "Failed to create server object");
         return ATINY_MALLOC_FAILED;
     }
     
-    ATobjArray[4] = get_object_conn_m(atiny_params);
-    if (NULL == ATobjArray[4])
+    handle->obj_array[OBJ_CONNECT_INDEX] = get_object_conn_m(atiny_params);
+    if (NULL == handle->obj_array[OBJ_CONNECT_INDEX])
     {
         ATINY_LOG(LOG_FATAL, "Failed to create server object");
         return ATINY_MALLOC_FAILED;
     }
         
-    ATobjArray[5] = get_platform_object(atiny_params);
-    if (NULL == ATobjArray[OBJ_PLATFORM_IDX])
+    handle->obj_array[OBJ_APP_INDEX] = get_platform_object(atiny_params);
+    if (NULL == handle->obj_array[OBJ_APP_INDEX])
     {
         ATINY_LOG(LOG_FATAL, "Failed to create server object");
         return ATINY_MALLOC_FAILED;
     }
         
-    result = lwm2m_configure(lwm2m_context, epname, NULL, NULL, OBJ_COUNT, ATobjArray);
+    result = lwm2m_configure(lwm2m_context, epname, NULL, NULL, OBJ_MAX_NUM, handle->obj_array);
     if (result != 0)
     {
         return ATINY_RESOURCE_NOT_FOUND;
     }
-
     
-    observe_register_ack_call_back(observe_handleAck);
     return ATINY_OK;
 }
 
@@ -285,50 +288,73 @@ void atiny_detroy(void* handle)
 {
     handle_data_t *handle_data = (handle_data_t *)handle;
      
-    if(handle_data)
+    if(handle_data == NULL)
     {
-        lwm2m_close(handle_data->lwm2m_context);
+        return;  
     }
 
-   
-    clean_security_object(ATobjArray[0]);
-    lwm2m_free(ATobjArray[0]);
-    clean_server_object(ATobjArray[1]);
-    lwm2m_free(ATobjArray[1]);
-    free_object_device(ATobjArray[2]);
-    free_object_firmware(ATobjArray[3]);
-    free_object_conn_m(ATobjArray[4]);
-    free_platform_object(ATobjArray[5]);
-    if(handle_data)
+    if(handle_data->lwm2m_context != NULL)
     {
-        lwm2m_free(handle_data);
+        lwm2m_close(handle_data->lwm2m_context); 
     }
 
+    if (INVALID_SOCKET != handle_data->client_data.sock)
+    {
+        close(handle_data->client_data.sock);
+    }
+    connection_free(handle_data->client_data.connList);
+    
+    if (handle_data->obj_array[OBJ_SECURITY_INDEX] != NULL)
+    {
+        clean_security_object(handle_data->obj_array[OBJ_SECURITY_INDEX]);
+        lwm2m_free(handle_data->obj_array[OBJ_SECURITY_INDEX]);
+    }
+    
+    if (handle_data->obj_array[OBJ_SERVER_INDEX] != NULL)
+    {
+        clean_server_object(handle_data->obj_array[OBJ_SERVER_INDEX]);
+        lwm2m_free(handle_data->obj_array[OBJ_SERVER_INDEX]);
+    }
+    
+    if (handle_data->obj_array[OBJ_DEVICE_INDEX] != NULL)
+    {
+         free_object_device(handle_data->obj_array[OBJ_DEVICE_INDEX]);
+    }
+
+    if (handle_data->obj_array[OBJ_FIRMWARE_INDEX] != NULL)
+    {
+        free_object_firmware(handle_data->obj_array[OBJ_FIRMWARE_INDEX]);
+    }
+
+    if (handle_data->obj_array[OBJ_CONNECT_INDEX] != NULL)
+    {
+        free_object_conn_m(handle_data->obj_array[OBJ_CONNECT_INDEX]);
+    }
+
+    if (handle_data->obj_array[OBJ_APP_INDEX] != NULL)
+    {
+        free_platform_object(handle_data->obj_array[OBJ_APP_INDEX]);
+    }
      /*close socket*/
 }
 
-static inline int atiny_check_change_to_disconnect(lwm2m_client_state_t old_state, lwm2m_client_state_t new_state)
-{
-    return ((STATE_READY == old_state) 
-            && (STATE_BOOTSTRAP_REQUIRED == new_state));
-}
 
 static void atiny_observe_cancel_notify(const lwm2m_context_t * contextP, const lwm2m_uri_t * uriP)
 {
+    lwm2m_object_t * targetP;
+    
     if(NULL == uriP)
     {
          ATINY_LOG(LOG_FATAL, "uriP null");
          return;
     }
 
-    if(NULL == ATobjArray[OBJ_PLATFORM_IDX])
+    LOG_URI(uriP);
+    targetP = (lwm2m_object_t *)LWM2M_LIST_FIND(contextP->objectList, uriP->objectId);
+ 
+    if(NULL != targetP)
     {
-        return;
-    }
-
-    if(uriP->objectId == ATobjArray[OBJ_PLATFORM_IDX]->objID)
-    {
-        free_platform_object_rpt_list(ATobjArray[OBJ_PLATFORM_IDX]);
+        free_platform_object_rpt_list(targetP);
         ATINY_LOG(LOG_INFO, "remove all rpt data by observe cancel");
     }
 }
@@ -336,26 +362,25 @@ static void atiny_observe_cancel_notify(const lwm2m_context_t * contextP, const 
 int atiny_bind(atiny_device_info_t* device_info,void* phandle)
 {
     handle_data_t *handle = phandle;    
-    lwm2m_context_t * lwm2mP = NULL;
     struct timeval tv;
     int ret;
 
     if((NULL == device_info) || (NULL == phandle))
     {
-        ATINY_LOG(LOG_FATAL, "phandle null");
+        ATINY_LOG(LOG_FATAL, "Parameter null");
         return ATINY_ARG_INVALID;
     }
 
     
     if(NULL == device_info->endpoint_name)
     {
-        //ATINY_LOG_INFO("device_info->endpoint_name null");
+        ATINY_LOG(LOG_ERR, "Endpoint name null");
         return ATINY_ARG_INVALID; 
     }
 
     if(NULL == device_info->manufacturer)
     {
-        ATINY_LOG(LOG_ERR, "device_info->manufacturer null");
+        ATINY_LOG(LOG_ERR, "Manufacturer name null");
         return ATINY_ARG_INVALID; 
     }
     
@@ -364,38 +389,24 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle)
     if(ret != ATINY_OK)
     {
         ATINY_LOG(LOG_FATAL, "atiny_init_object fail %d", ret);
+        atiny_detroy(handle);
         return ret;
     }
 
     lwm2m_reg_observe_cancel_notify(atiny_observe_cancel_notify);
-
+    observe_register_ack_call_back(observe_handleAck);
     
-    lwm2mP = handle->lwm2m_context;
-    if(NULL == lwm2mP)
-    {
-        ATINY_LOG(LOG_FATAL, "lwm2m_context null");
-        return ATINY_ARG_INVALID;
-    }
-    
-
-
     while(!handle->atiny_quit)
     {                
         tv.tv_sec = 10;
-        tv.tv_usec = 0;        
-        time_t sec = (time_t)tv.tv_sec;    
-        lwm2m_client_state_t old_state = lwm2mP->state;
-        lwm2m_step(lwm2mP,&sec);          
-        atiny_recv(lwm2mP,&tv); 
-        if(atiny_check_change_to_disconnect(old_state, lwm2mP->state))
-        {
-            ATINY_LOG(LOG_INFO, "change to disconnect");
-            free_platform_object_rpt_list(ATobjArray[OBJ_PLATFORM_IDX]);
-        }
+        tv.tv_usec = 0;
+        time_t sec = (time_t)tv.tv_sec;
+        lwm2m_step(handle->lwm2m_context,&sec); 
+        atiny_recv(handle->lwm2m_context,&tv);
     }
 
     atiny_detroy(phandle);
- 
+
     return ATINY_OK;
 }
 
@@ -403,6 +414,11 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle)
 
 void atiny_deinit(void* handle)
 {
+    if (handle == NULL)
+    {
+        return;
+    }
+    
     handle_data_t* handle_data = (handle_data_t*)handle;
     handle_data->atiny_quit = 1;
 }
@@ -443,13 +459,7 @@ int atiny_data_report(void* phandle, data_report_t *report_data)
         default:
             return ATINY_RESOURCE_NOT_FOUND;
     }
-#if 0
-    if(lwm2m_resource_value_changed(atiny_context,&uri) != URI_OBSERVED)
-    {
-        ATINY_LOG(LOG_ERR, "%d not observe", report_data->type);
-        return ATINY_ARG_INVALID;
-    }
-#endif
+
     data_node = (data_node_t*)lwm2m_malloc(sizeof(data_node_t));
     if (NULL == data_node)
     {

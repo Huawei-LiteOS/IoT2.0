@@ -86,6 +86,7 @@ typedef struct
 {
     char* endpoint_name;
     char* manufacturer;
+    char* dev_type;
 } atiny_device_info_t;
 
 /*****************************************************************************
@@ -175,6 +176,7 @@ typedef enum
   ATINY_RESOURCE_NOT_FOUND  = -5,
   ATINY_BUF_NOT_ENOUGH      = -6,
   ATINY_CLIENT_UNREGISTERED = -7, 
+  ATINY_SOCKET_CREATE_FAILED = -8,
 }atiny_error_e;
 
 

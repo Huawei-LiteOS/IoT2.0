@@ -788,18 +788,8 @@ void observe_step(lwm2m_context_t * contextP,
                             }       
                         }
 
-                        if (cfg.callback != NULL) 
+                        if (cfg.callback == NULL) 
                         {
-                            transaction = transaction_new(watcherP->server->sessionH, COAP_205_CONTENT, NULL, NULL, contextP->nextMID++, watcherP->tokenLen, watcherP->token);
-                            transaction->cfg.callback = cfg.callback;
-                            transaction->cfg.cookie = cfg.cookie;
-                            transaction->cfg.type = cfg.type;
-                            transaction->callback = observe_call_back;                         
-                            coap_set_header_content_type(transaction->message, watcherP->format);
-                            coap_add_data(( coap_pdu_t *)transaction->message, length, buffer);
-                            contextP->transactionList = (lwm2m_transaction_t *)LWM2M_LIST_ADD(contextP->transactionList, transaction);
-                            LOG_ARG("con observe cookie:%d type:%d", transaction->cfg.cookie, transaction->cfg.type);
-                        } else {
                             message = coap_pdu_init(COAP_MESSAGE_NON, COAP_205_CONTENT,  0, COAP_MAX_PDU_SIZE);
                             coap_add_token(message, watcherP->tokenLen, watcherP->token);
                             coap_set_header_content_type(message, watcherP->format);
@@ -809,19 +799,28 @@ void observe_step(lwm2m_context_t * contextP,
                     }
                     watcherP->lastTime = currentTime;
                     watcherP->lastMid = contextP->nextMID++;
-                    message->hdr->id = watcherP->lastMid;
-                    //coap_set_header_token(message, watcherP->token, watcherP->tokenLen);
-										
-                    coap_set_header_observe(message, watcherP->counter++);
 
-       			    if (cfg.callback != NULL)  
-       			    {
-       			        (void)transaction_send(contextP, transaction);
-       			    }	
-       			    else
-       			    {
-       			        (void)message_send(contextP, message, watcherP->server->sessionH);
-       			    }
+                    if (cfg.callback == NULL) 
+                    {
+                        message->hdr->id = watcherP->lastMid;
+                        coap_set_header_observe(message, watcherP->counter++);
+                        (void)message_send(contextP, message, watcherP->server->sessionH);
+                    }
+                    else
+                    {          
+                        transaction = transaction_new(watcherP->server->sessionH, COAP_205_CONTENT, NULL, NULL, watcherP->lastMid, watcherP->tokenLen, watcherP->token);
+                        transaction->cfg.callback = cfg.callback;
+                        transaction->cfg.cookie = cfg.cookie;
+                        transaction->cfg.type = cfg.type;
+                        transaction->callback = observe_call_back;                         
+                        coap_set_header_content_type(transaction->message, watcherP->format);
+                        coap_set_header_observe(transaction->message, watcherP->counter++);
+                        coap_add_data((coap_pdu_t *)transaction->message, length, buffer);
+                        contextP->transactionList = (lwm2m_transaction_t *)LWM2M_LIST_ADD(contextP->transactionList, transaction);
+                        (void)transaction_send(contextP, transaction);
+                        LOG_ARG("con observe cookie:%d type:%d", transaction->cfg.cookie, transaction->cfg.type);
+                    } 
+
                     watcherP->update = false;
                 }
 
