@@ -225,6 +225,7 @@ void lwm2m_close_connection(void * sessionH, void * userData)
 int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length, uint32_t timeout)
 {
     connection_t * connP = (connection_t*) sessionH;
+    timeout*=1000;
 
     if (connP->dtls_flag == false) {
         // no security
