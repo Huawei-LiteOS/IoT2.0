@@ -1,22 +1,14 @@
 #include "liblwm2m.h"
 #include "agenttiny.h"
 #include "object_comm.h"
-#if defined (WITH_TINYDTLS)
-#include "dtlsconnection.h"
-#elif defined(WITH_MBEDTLS)
-#include "dtls_conn.h"
+#ifdef WITH_SDTLS
 #include "dtls_interface.h"
-#else
-#include "dtls_conn.h"
 #endif
+#include "dtls_conn.h"
 #include "internals.h"
 #include "agenttiny.h"
 #include "agent_list.h"
-//#include "pdu.h"
-#include "cmsis_os.h"
 #include "atiny_log.h"
-#include "object_comm.h"
-#include "dtls_conn.h"
 #include "atiny_rpt.h"
 
 
