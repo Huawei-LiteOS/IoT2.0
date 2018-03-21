@@ -69,6 +69,7 @@ extern "C" {
 #ifdef WITH_MBEDTLS
 #include "ssl.h"
 #endif
+#include "er-coap-13.h"
 
 
 
@@ -597,7 +598,7 @@ struct _lwm2m_transaction_
     time_t                response_timeout; // timeout to wait for response, if token is used. When 0, use calculated acknowledge timeout.
     uint8_t  retrans_counter;
     time_t   retrans_time;
-    void * message;
+    coap_packet_t * message;
     uint16_t buffer_len;
     uint8_t * buffer;
     lwm2m_data_cfg_t   cfg;
