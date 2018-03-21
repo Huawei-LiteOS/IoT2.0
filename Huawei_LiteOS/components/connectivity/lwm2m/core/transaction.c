@@ -349,14 +349,19 @@ int transaction_send(lwm2m_context_t * contextP,
                      lwm2m_transaction_t * transacP)
 {
     bool maxRetriesReached = false;
+    coap_packet_t * message = transacP->message;
 
     LOG("Entering");
+
+    LOG_ARG("transaction_send process: ver %u, type %u, tkl %u, code %u.%.2u, mid %u, Content type: %d",
+            message->version, message->type, message->token_len, message->code >> 5, message->code & 0x1F, message->mid, message->content_type);
     if (transacP->buffer == NULL)
     {
-        transacP->buffer_len = coap_serialize_get_size(transacP->message);
+        transacP->buffer_len = coap_serialize_get_size(message);
         if (transacP->buffer_len == 0)
         {
            transaction_remove(contextP, transacP);
+           LOG("remove");
            return COAP_500_INTERNAL_SERVER_ERROR;
         }
 
@@ -364,15 +369,17 @@ int transaction_send(lwm2m_context_t * contextP,
         if (transacP->buffer == NULL)
         {
            transaction_remove(contextP, transacP);
+           LOG("remove");
            return COAP_500_INTERNAL_SERVER_ERROR;
         }
 
-        transacP->buffer_len = coap_serialize_message(transacP->message, transacP->buffer);
+        transacP->buffer_len = coap_serialize_message(message, transacP->buffer);
         if (transacP->buffer_len == 0)
         {
             lwm2m_free(transacP->buffer);
             transacP->buffer = NULL;
             transaction_remove(contextP, transacP);
+            LOG("remove");
             return COAP_500_INTERNAL_SERVER_ERROR;
         }
     }
@@ -406,6 +413,7 @@ int transaction_send(lwm2m_context_t * contextP,
             output_buffer(stderr, (uint8_t *)(transacP->buffer), transacP->buffer_len, 0);
             transacP->retrans_time += timeout;
             transacP->retrans_counter += 1;
+            LOG_ARG("send, retrans_counter:%d", transacP->retrans_counter);
         }
         else
         {
@@ -420,6 +428,7 @@ int transaction_send(lwm2m_context_t * contextP,
             transacP->callback(transacP, NULL);
         }
         transaction_remove(contextP, transacP);
+        LOG_ARG("remove, ACK:%d, timeout: %d", transacP->ack_received, maxRetriesReached);
         return -1;
     }
 
