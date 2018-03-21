@@ -354,7 +354,9 @@ int atiny_clear_rpt_data(const lwm2m_uri_t *uri, int result)
 
 int atiny_step_rpt(lwm2m_context_t * context)
 {
+    atiny_mutex_lock(g_mutex);
     atiny_visit_list(&g_atiny_rpt_table, atiny_notify_stack_rpt_data_change, context);
+    atiny_mutex_unlock(g_mutex);
     return ATINY_OK;
 }
 
