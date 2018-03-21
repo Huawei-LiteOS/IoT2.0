@@ -9,7 +9,6 @@
 #else
 #include "dtls_conn.h"
 #endif
-#include <lwip/sockets.h>
 #include "internals.h"
 #include "agenttiny.h"
 #include "agent_list.h"
@@ -176,17 +175,19 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     return ATINY_OK;
 }
 
-static int lwm2m_poll(lwm2m_context_t * contextP, struct timeval * timeoutP)
+static int lwm2m_poll(lwm2m_context_t* contextP, uint32_t* timeout)
 {
     client_data_t* dataP;  
     uint8_t buffer[MAX_PACKET_SIZE] = {0};
     int numBytes;
+    connection_t* connP;
 
     dataP = (client_data_t*)(contextP->userData);   
-    connection_t *connP = dataP->connList;
+    connP = dataP->connList;
+    
 	while (connP != NULL)
     {
-		numBytes = lwm2m_buffer_recv(connP, buffer, MAX_PACKET_SIZE);
+		numBytes = lwm2m_buffer_recv(connP, buffer, MAX_PACKET_SIZE, *timeout);
 		if(numBytes <= 0)
 		{
 			atiny_log("no packet arrived!");
@@ -271,7 +272,7 @@ static void atiny_observe_cancel_notify(const lwm2m_context_t * contextP, const 
 int atiny_bind(atiny_device_info_t* device_info,void* phandle)
 {
     handle_data_t *handle = phandle;    
-    struct timeval tv;
+    uint32_t timeout;
     int ret;
 
     if((NULL == device_info) || (NULL == phandle))
@@ -307,13 +308,11 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle)
     
     while(!handle->atiny_quit)
     {                
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        time_t sec = (time_t)tv.tv_sec;
+        timeout = 10;
 
         (void)atiny_step_rpt(handle->lwm2m_context);
-        lwm2m_step(handle->lwm2m_context,&sec); 
-        lwm2m_poll(handle->lwm2m_context,&tv);
+        lwm2m_step(handle->lwm2m_context,&timeout); 
+        lwm2m_poll(handle->lwm2m_context,&timeout);
     }
 
     atiny_detroy(phandle);
