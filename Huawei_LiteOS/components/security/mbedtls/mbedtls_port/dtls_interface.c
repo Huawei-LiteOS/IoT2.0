@@ -245,9 +245,11 @@ int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len)
     return ret;
 }
 
-int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len)
+int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len, uint32_t timeout)
 {
     int ret = 0;
+
+    mbedtls_ssl_conf_read_timeout( ssl->conf, timeout );
 
     do ret = mbedtls_ssl_read( ssl, buf, len );
     while( ret == MBEDTLS_ERR_SSL_WANT_READ ||

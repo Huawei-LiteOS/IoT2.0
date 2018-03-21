@@ -90,8 +90,11 @@ int atiny_test(void){
     report_data.cookie = 0;
     report_data.len = sizeof(buf);
     report_data.type = APP_DATA;
+    int cnt = 0;
     while(1){
 	if(g_phandle!=NULL){
+        report_data.cookie = cnt;
+        cnt++;
     	ret = atiny_data_report(g_phandle, &report_data);
         printf("report ret:%d\n",ret);
     }
@@ -120,8 +123,8 @@ UINT32 creat_report_task()
         
 }
 
-char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x83};
-
+char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x92};
+char * g_endpoint_name = "11110000";
 void lwm2m_main(int argc, char *argv[])
 {
      atiny_device_info_t *device_info = &g_device_info;
@@ -134,7 +137,8 @@ void lwm2m_main(int argc, char *argv[])
     }
     //device_info->endpoint_name = "urn:imei:15700077089";
     //device_info->endpoint_name = "666004";
-    device_info->endpoint_name = "666003";
+    //device_info->endpoint_name = "666003";
+    device_info->endpoint_name = g_endpoint_name;
     device_info->manufacturer = "test";
     
     //void* phandle;
@@ -150,7 +154,8 @@ void lwm2m_main(int argc, char *argv[])
     security_param->is_bootstrap = FALSE;
     security_param->server_ip = "139.159.209.89";
     security_param->server_port = "5684";
-    security_param->psk_Id = "666003";
+    //security_param->psk_Id = "666003";
+    security_param->psk_Id = g_endpoint_name;
     security_param->psk = g_psk_value;
     security_param->psk_len = 16;
  #if 0   

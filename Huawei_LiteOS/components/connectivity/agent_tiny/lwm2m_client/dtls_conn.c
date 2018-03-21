@@ -222,17 +222,17 @@ void lwm2m_close_connection(void * sessionH, void * userData)
 }
 
 
-int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length)
+int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length, uint32_t timeout)
 {
     connection_t * connP = (connection_t*) sessionH;
 
     if (connP->dtls_flag == false) {
         // no security
-        return atiny_net_recv(connP->net_context, buffer, length);
+        return atiny_net_recv_timeout(connP->net_context, buffer, length, timeout);
     } 
     else 
     {
-        return dtls_read(connP->net_context, buffer, length);
+        return dtls_read(connP->net_context, buffer, length, timeout);
         
     }
 }
