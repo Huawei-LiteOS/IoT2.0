@@ -200,32 +200,6 @@ uint8_t object_readData(lwm2m_context_t * contextP,
     return result;
 }
 
-uint8_t object_change(lwm2m_context_t * contextP,
-                        lwm2m_uri_t * uriP,
-                        uint8_t * buffer,
-                        size_t length)
-{
-    uint8_t result = NO_ERROR;
-    lwm2m_object_t * targetP;
-    
-    LOG_URI(uriP);
-    targetP = (lwm2m_object_t *)LWM2M_LIST_FIND(contextP->objectList, uriP->objectId);
-    if (NULL == targetP)
-    {
-        return  COAP_404_NOT_FOUND;
-        
-    }
-    
-    if (NULL == targetP->change)
-    {
-        return COAP_405_METHOD_NOT_ALLOWED;
-    }
-      
-    result = targetP->change(uriP->instanceId, buffer, length, targetP);
-    LOG_ARG("result: %u.%2u", (result & 0xFF) >> 5, (result & 0x1F));
-
-    return result;
-}
 
 uint8_t object_read(lwm2m_context_t * contextP,
                     lwm2m_uri_t * uriP,
