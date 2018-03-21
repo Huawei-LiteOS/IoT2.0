@@ -718,12 +718,8 @@ int lwm2m_remove_object(lwm2m_context_t * contextP, uint16_t id);
 // If withObjects is true, the registration update contains the object list.
 int lwm2m_update_registration(lwm2m_context_t * contextP, uint16_t shortServerID, bool withObjects);
 
-enum
-{	  
-	  URI_OBSERVED,
-    URI_NOT_OBSERVED
-};
-int lwm2m_resource_value_changed(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
+
+void lwm2m_resource_value_changed(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
 
 typedef void(*lwm2m_observe_cancel_notify_t)(const lwm2m_context_t * contextP, const lwm2m_uri_t * uriP);
 void lwm2m_reg_observe_cancel_notify(lwm2m_observe_cancel_notify_t notify);
