@@ -135,7 +135,6 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle);
 void atiny_deinit(void* phandle);
 
 #define MAX_REPORT_DATA_LEN      1024  /*´ýÕå×Ã*/
-#define MAX_BUFFER_REPORT_CNT 8
 typedef enum
 {
     NOT_SENT = 0,
@@ -145,7 +144,6 @@ typedef enum
     SENT_SUCCESS,
     SENT_GET_RST,
     SEND_PENDING,
-    OBSERVE_CANCEL
 }DATA_SEND_STATUS;
 
 typedef void (*atiny_ack_callback) (atiny_report_type_e type, int cookie, DATA_SEND_STATUS status);
@@ -192,7 +190,7 @@ typedef enum
   ATINY_MSG_CONGEST         = -3,
   ATINY_MALLOC_FAILED       = -4,
   ATINY_RESOURCE_NOT_FOUND  = -5,
-  ATINY_RESOURCE_NOT_ENOUGH      = -6,
+  ATINY_BUF_NOT_ENOUGH      = -6,
   ATINY_CLIENT_UNREGISTERED = -7, 
   ATINY_SOCKET_CREATE_FAILED = -8,
 }atiny_error_e;

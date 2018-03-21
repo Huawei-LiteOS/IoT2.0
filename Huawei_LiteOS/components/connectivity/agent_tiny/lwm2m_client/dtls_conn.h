@@ -53,7 +53,7 @@ uint8_t lwm2m_buffer_send(void * sessionH,
                           uint8_t * buffer,
                           size_t length,
                           void * userdata);
-int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length, uint32_t timeout);
+int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length);
 
 void lwm2m_close_connection(void * sessionH, void * userData);
 

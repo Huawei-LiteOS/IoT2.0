@@ -25,7 +25,6 @@
 #include <ctype.h>
 #include "atiny_log.h"
 #include "agent_list.h"
-#include "atiny_rpt.h"
 
 
 #define PRV_TLV_BUFFER_SIZE 64
@@ -45,7 +44,7 @@ typedef struct _prv_instance_
      */
     struct _prv_instance_ * next;   // matches lwm2m_list_t::next
     uint16_t shortID;               // matches lwm2m_list_t::id
-    rpt_list_t header;
+    atiny_dl_list header;
     uint8_t  test;
     double   dec;
     uint8_t  opaq[5];
@@ -96,9 +95,9 @@ static uint8_t prv_read(uint16_t instanceId,
 {
     plat_instance_t * targetP;
     int i;
-//    unsigned int uvIntSave;
-    int ret;
-    data_report_t data;
+    unsigned int uvIntSave;
+    atiny_dl_list * node;
+    data_node_t* data_node;
 	
     targetP = (plat_instance_t *)lwm2m_list_find(objectP->instanceList, instanceId);
     if (NULL == targetP) return COAP_404_NOT_FOUND;
@@ -117,25 +116,28 @@ static uint8_t prv_read(uint16_t instanceId,
         {
         case 0:
             printf("19/0/0 read\r\n");
-
-            ret = atiny_dequeue_rpt_data((targetP->header), &data);
-            if (ret != ATINY_OK)
+            uvIntSave = LOS_IntLock();
+            if (atiny_list_empty(&(targetP->header)))
             {
-                ATINY_LOG(LOG_ERR, "atiny_dequeue_rpt_data fail,ret=%d", ret);
+                LOS_IntRestore(uvIntSave);
                 return COAP_404_NOT_FOUND;
             }
+            node = atiny_list_get_head(&(targetP->header));
+            atiny_list_delete(node);
+            LOS_IntRestore(uvIntSave);
             
-            
+            data_node = (data_node_t*)node;
             (*dataArrayP)[i].id = 0;
             (*dataArrayP)[i].type = LWM2M_TYPE_OPAQUE;
-            (*dataArrayP)[i].value.asBuffer.buffer = data.buf;
-            (*dataArrayP)[i].value.asBuffer.length = data.len;
+            (*dataArrayP)[i].value.asBuffer.buffer = data_node->data.buf;
+            (*dataArrayP)[i].value.asBuffer.length = data_node->data.len;
             if (dataCfg != NULL)
             {
-                dataCfg->type = data.type;
-                dataCfg->cookie = data.cookie;
-                dataCfg->callback = (lwm2m_data_process)data.callback;
+                dataCfg->type = data_node->data.type;
+                dataCfg->cookie = data_node->data.cookie;
+                dataCfg->callback = (lwm2m_data_process)data_node->data.callback;
             }
+            lwm2m_free(data_node);
             break;
         default:
             return COAP_404_NOT_FOUND;
@@ -146,7 +148,28 @@ static uint8_t prv_read(uint16_t instanceId,
 }
 
 
+static uint8_t prv_change(uint16_t instanceId,
+                          uint8_t * buffer,
+                          int length,
+                          lwm2m_object_t * objectP)
+{
+    plat_instance_t * targetP;
+    unsigned int   uvIntSave;
+    data_node_t*   data_node;
 
+    targetP = (plat_instance_t *)lwm2m_list_find(objectP->instanceList, instanceId);
+    if (NULL == targetP) 
+    {
+        return COAP_404_NOT_FOUND;
+    }
+    
+    data_node = (data_node_t*)buffer;
+    uvIntSave = LOS_IntLock();
+    atiny_list_insert_tail(&(targetP->header), &(data_node->list)); 
+    LOS_IntRestore(uvIntSave);
+
+    return  COAP_NO_ERROR;
+}
 static uint8_t prv_discover(uint16_t instanceId,
                             int * numDataP,
                             lwm2m_data_t ** dataArrayP,
@@ -211,18 +234,39 @@ static uint8_t prv_write(uint16_t instanceId,
     return COAP_204_CHANGED;
 }
 
+static void prv_free_rpt_list(atiny_dl_list *list)
+{
+    atiny_dl_list *item;
+    atiny_dl_list *next;
+
+    ATINY_LOG(LOG_ERR, "prv_free_rpt_list");
+    if (NULL == list)
+    {
+        ATINY_LOG(LOG_ERR, "null point");
+        return;
+    }
+        
+    ATINY_DL_LIST_FOR_EACH_SAFE(item, next, list)
+    {
+        data_node_t *data_node = (data_node_t *)item;
+        if(data_node->data.buf)
+        {
+            lwm2m_free(data_node->data.buf);
+        }
+        lwm2m_free(data_node);
+    }
+}
 
 static uint8_t prv_delete(uint16_t id,
                           lwm2m_object_t * objectP)
 {
     plat_instance_t * targetP;
-    lwm2m_uri_t uri;
 
     objectP->instanceList = lwm2m_list_remove(objectP->instanceList, id, (lwm2m_list_t **)&targetP);
     if (NULL == targetP) return COAP_404_NOT_FOUND;
 
-    get_instance_uri(objectP->objID,  targetP->shortID,  &uri);
-    atiny_rm_rpt_uri(&uri);
+    prv_free_rpt_list(&targetP->header);
+
     lwm2m_free(targetP);
 
     return COAP_202_DELETED;
@@ -235,23 +279,13 @@ static uint8_t prv_create(uint16_t instanceId,
 {
     plat_instance_t * targetP;
     uint8_t result;
-    int ret;
-    lwm2m_uri_t uri;
 
 
     targetP = (plat_instance_t *)lwm2m_malloc(sizeof(plat_instance_t));
     if (NULL == targetP) return COAP_500_INTERNAL_SERVER_ERROR;
     memset(targetP, 0, sizeof(plat_instance_t));
     //atiny_list_init(&(targetP->header));
-
-    //TODO: if instanceId not valid
-    get_instance_uri(PLATFORM_OBJECT_ID, instanceId, &uri);
-    ret = atiny_add_rpt_uri(&uri, &targetP->header);
-    if(ret != ATINY_OK)
-    {
-        ATINY_LOG(LOG_ERR, "atiny_add_rpt_uri fail %d", ret);
-        return COAP_404_NOT_FOUND;
-    }
+    atiny_list_init(&(targetP->header));
 
     targetP->shortID = instanceId;
     objectP->instanceList = LWM2M_LIST_ADD(objectP->instanceList, targetP);
@@ -328,8 +362,6 @@ lwm2m_object_t * get_platform_object(atiny_param_t* atiny_params)
     {
         int i;
         plat_instance_t * targetP;
-        lwm2m_uri_t uri;
-        int ret = ATINY_OK;
 
         memset(testObj, 0, sizeof(lwm2m_object_t));
 
@@ -339,17 +371,10 @@ lwm2m_object_t * get_platform_object(atiny_param_t* atiny_params)
             targetP = (plat_instance_t *)lwm2m_malloc(sizeof(plat_instance_t));
             if (NULL == targetP) return NULL;
             memset(targetP, 0, sizeof(plat_instance_t));
-            get_instance_uri(PLATFORM_OBJECT_ID, i, &uri);
-            ret = atiny_add_rpt_uri(&uri, &targetP->header);
-            if(ret != ATINY_OK)
-            {
-                ATINY_LOG(LOG_ERR, "atiny_add_rpt_uri fail %d", ret);
-                break;
-            }
+            atiny_list_init(&(targetP->header));
             targetP->shortID = i;
             testObj->instanceList = LWM2M_LIST_ADD(testObj->instanceList, targetP);
-        }				
-				
+        }
         /*
          * From a single instance object, two more functions are available.
          * - The first one (createFunc) create a new instance and filled it with the provided informations. If an ID is
@@ -363,30 +388,18 @@ lwm2m_object_t * get_platform_object(atiny_param_t* atiny_params)
         testObj->executeFunc = prv_exec;
         testObj->createFunc = prv_create;
         testObj->deleteFunc = prv_delete;
+        testObj->change = prv_change;
     }
 
     return testObj;
 }
 
-static void free_platform_object_rpt(lwm2m_object_t * object)
-{
-    lwm2m_list_t *cur = object->instanceList;
-    lwm2m_uri_t uri;
-    while(cur)
-    {
-        
-        get_instance_uri(object->objID, ((plat_instance_t *)cur)->shortID, &uri);
-        atiny_rm_rpt_uri(&uri);
-			  cur = cur->next;
-    }
-}
-
 void free_platform_object(lwm2m_object_t * object)
 {
-    free_platform_object_rpt(object);
     LWM2M_LIST_FREE(object->instanceList);
     if (object->userData != NULL)
     {
+        prv_free_rpt_list(&((plat_instance_t *)object->userData)->header);
         lwm2m_free(object->userData);
         object->userData = NULL;
     }
@@ -394,6 +407,21 @@ void free_platform_object(lwm2m_object_t * object)
 }
 
 
+void free_platform_object_rpt_list(lwm2m_object_t * object)
+{
+    if(NULL == object)
+    {
+        ATINY_LOG(LOG_ERR, "null point");
+        return;
+    }
+
+    if (NULL == object->userData)
+    {
+        return;
+    }
+
+    prv_free_rpt_list(&((plat_instance_t *)object->userData)->header);
+}
 
 
 

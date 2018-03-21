@@ -103,6 +103,7 @@ void display_test_object(lwm2m_object_t * objectP);
 lwm2m_object_t * get_platform_object(atiny_param_t *atiny_params);
 void free_platform_object(lwm2m_object_t * object);
 void display_platform_object(lwm2m_object_t * objectP);
+void free_platform_object_rpt_list(lwm2m_object_t * object);
 
 
 

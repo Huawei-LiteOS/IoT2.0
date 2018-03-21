@@ -458,13 +458,14 @@ lwm2m_observed_t * observe_findByUri(lwm2m_context_t * contextP,
     return NULL;
 }
 
-void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
+int lwm2m_resource_value_changed(lwm2m_context_t * contextP,
                                   lwm2m_uri_t * uriP)
 {
     lwm2m_observed_t * targetP;
 
     LOG_URI(uriP);
     targetP = contextP->observedList;
+    int ret = URI_NOT_OBSERVED;
     while (targetP != NULL)
     {
         if (targetP->uri.objectId == uriP->objectId)
@@ -488,6 +489,7 @@ void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
                         {
                             LOG("Tagging a watcher");
                             watcherP->update = true;
+                            ret = URI_OBSERVED;
                         }
                     }
                 }
@@ -496,6 +498,7 @@ void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
         targetP = targetP->next;
     }
 
+    return ret;
 }
 
 void lwm2m_resource_value_changed_ex(lwm2m_context_t * contextP,
