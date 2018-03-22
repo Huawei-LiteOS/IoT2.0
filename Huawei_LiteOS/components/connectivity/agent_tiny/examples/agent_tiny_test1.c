@@ -25,10 +25,11 @@
 #include "los_queue.ph"
 #include "cmsis_os.h"
 #include "agenttiny.h"
+#include "atiny_adapter.h"
 
 void atiny_log(const char* fmt, ...)
 {
-    printf(fmt);
+    atiny_printf(fmt);
 }
 typedef struct 
 {

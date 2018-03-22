@@ -1,9 +1,6 @@
 #include "liblwm2m.h"
 #include "agenttiny.h"
 #include "object_comm.h"
-#ifdef WITH_DTLS
-#include "dtls_interface.h"
-#endif
 #include "dtls_conn.h"
 #include "internals.h"
 #include "agenttiny.h"
