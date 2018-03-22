@@ -1,12 +1,7 @@
 #include "liblwm2m.h"
 #include "agenttiny.h"
 
-
-#ifdef WITH_DTLS
-#include "dtlsconnection.h"
-#else
-#include "dtls_conn.h"
-#endif
+//#include "dtls_conn.h"
 
 #include <string.h>
 #include <stdlib.h>
