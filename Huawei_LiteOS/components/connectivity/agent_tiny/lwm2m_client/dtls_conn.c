@@ -266,13 +266,12 @@ uint8_t lwm2m_buffer_send(void * sessionH,
 #ifdef WITH_DTLS
     if (connP->dtls_flag == true) {
         // no security
-        return atiny_net_send(connP->net_context, buffer, length);
+	    return dtls_write(connP->net_context, buffer, length);
     } 
     else 
 #endif        
     {
-        return dtls_write(connP->net_context, buffer, length);
-        
+        return atiny_net_send(connP->net_context, buffer, length);   
     }
 }
 
