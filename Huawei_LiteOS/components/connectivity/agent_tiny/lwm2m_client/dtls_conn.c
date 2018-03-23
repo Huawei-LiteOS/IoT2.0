@@ -22,6 +22,7 @@
 #include "dtls_conn.h"
 #include "dtls_interface.h"
 #include "atiny_socket.h"
+#include "atiny_log.h"
 #include "object_comm.h"
 
 #define COAP_PORT "5683"
@@ -38,7 +39,7 @@ connection_t * connection_create(connection_t * connList,
     char * host;
     char * port;
     int ret;
-    fprintf(stderr, "now come into connection_create!!!");
+    ATINY_LOG(LOG_INFO, "now come into connection_create!!!");
   
     security_instance_t * targetP = (security_instance_t *)LWM2M_LIST_FIND(securityObj->instanceList, instanceId);
     if (NULL == targetP)
@@ -49,10 +50,10 @@ connection_t * connection_create(connection_t * connList,
     uri = targetP->uri;
     if (uri == NULL) 
     {
-        fprintf(stderr, "uri is NULL!!!");
+        ATINY_LOG(LOG_INFO, "uri is NULL!!!");
         return NULL;
     }
-    printf("uri is %s\n",uri);
+    ATINY_LOG(LOG_INFO, "uri is %s\n",uri);
     
     // parse uri in the form "coaps://[host]:[port]"
     char * defaultport;
@@ -68,7 +69,7 @@ connection_t * connection_create(connection_t * connList,
     }
     else
     {
-        fprintf(stderr, "come here1!!!");
+        ATINY_LOG(LOG_INFO, "come here1!!!");
         return NULL;
     }
     port = strrchr(host, ':');
@@ -88,7 +89,7 @@ connection_t * connection_create(connection_t * connList,
             }
             else
             {
-                fprintf(stderr, "come here2!!!");
+                ATINY_LOG(LOG_INFO, "come here2!!!");
                 return NULL;
             }
         }
@@ -100,11 +101,12 @@ connection_t * connection_create(connection_t * connList,
 	connP = (connection_t *)lwm2m_malloc(sizeof(connection_t));
 	if(connP == NULL)
 	{
-		fprintf(stderr, "connP is NULL!!!");
+		ATINY_LOG(LOG_INFO, "connP is NULL!!!");
 		return NULL;
 	}
 	memset(connP, 0, sizeof(connection_t));
 
+#ifdef WITH_DTLS
   if (targetP->securityMode != LWM2M_SECURITY_MODE_NONE)
     {
         //unsigned char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x83};
@@ -113,7 +115,7 @@ connection_t * connection_create(connection_t * connList,
         connP->net_context = (void*)dtls_ssl_new_with_psk(targetP->secretKey, targetP->secretKeyLen, targetP->publicIdentity);
 	    if(NULL == connP->net_context)
 	    {
-	        fprintf(stderr, "connP->ssl is NULL in connection_create");
+	        ATINY_LOG(LOG_INFO, "connP->ssl is NULL in connection_create");
 	        lwm2m_free(connP);
 	        return NULL;
 	    }
@@ -121,19 +123,20 @@ connection_t * connection_create(connection_t * connList,
 	    
 	    if(ret != 0)
 	    {
-	        fprintf(stderr, "ret is %d in connection_create",ret);
+	        ATINY_LOG(LOG_INFO, "ret is %d in connection_create",ret);
 	        lwm2m_free(connP);
 	        return NULL;
 	    }
 			  connP->dtls_flag = true;			
     }
     else
+#endif        
     {
         // no dtls session
         connP->net_context = atiny_net_connect(host,port, ATINY_PROTO_UDP);
 				if(NULL == connP->net_context)
 				{
-						fprintf(stderr, "connP->ssl is NULL in connection_create");
+						ATINY_LOG(LOG_INFO, "connP->ssl is NULL in connection_create");
 						lwm2m_free(connP);
 						return NULL;
 				}
@@ -149,14 +152,18 @@ connection_t * connection_create(connection_t * connList,
 
 void connection_free(connection_t * connP)
 {
-    if (connP->dtls_flag == false) {
+#ifdef WITH_DTLS    
+    if (connP->dtls_flag == true) {
         // no security
-        atiny_net_close(connP->net_context);
+        dtls_ssl_destroy(connP->net_context);
     }
 	else
+#endif        
     {
-		dtls_ssl_destroy(connP->net_context);
+		atiny_net_close(connP->net_context);
     }
+
+    return;
 }
 
 void * lwm2m_connect_server(uint16_t secObjInstID, void * userData)
@@ -167,7 +174,7 @@ void * lwm2m_connect_server(uint16_t secObjInstID, void * userData)
   dataP = (client_data_t *)userData;
   lwm2m_object_t  * securityObj = dataP->securityObjP;
 
-  fprintf(stderr, "Now come into Connection creation in lwm2m_connect_server.\n");
+  ATINY_LOG(LOG_INFO, "Now come into Connection creation in lwm2m_connect_server.\n");
   
   instance = LWM2M_LIST_FIND(dataP->securityObjP->instanceList, secObjInstID);
   if (instance == NULL)
@@ -179,13 +186,13 @@ void * lwm2m_connect_server(uint16_t secObjInstID, void * userData)
   newConnP = connection_create(dataP->connList, securityObj, instance->id, dataP->lwm2mH);
   if (newConnP == NULL)
   {
-      fprintf(stderr, "Connection creation failed.\n");     
+      ATINY_LOG(LOG_INFO, "Connection creation failed.\n");     
       return NULL;
   }
 
-  fprintf(stderr, "Connection creation successfully in lwm2m_connect_server.\n");
-  
+  ATINY_LOG(LOG_INFO, "Connection creation successfully in lwm2m_connect_server.\n");
   dataP->connList = newConnP;
+  
   return (void *)newConnP;
 }
 
@@ -219,6 +226,8 @@ void lwm2m_close_connection(void * sessionH, void * userData)
             lwm2m_free(targetP);
         }
     }
+
+    return;
 }
 
 
@@ -227,14 +236,15 @@ int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length, uint32_t
     connection_t * connP = (connection_t*) sessionH;
     timeout*=1000;
 
-    if (connP->dtls_flag == false) {
-        // no security
-        return atiny_net_recv_timeout(connP->net_context, buffer, length, timeout);
-    } 
-    else 
-    {
+#ifdef WITH_DTLS
+    if (connP->dtls_flag == true) {
+        //security
         return dtls_read(connP->net_context, buffer, length, timeout);
-        
+    } 
+    else  
+#endif      
+    {
+        return atiny_net_recv_timeout(connP->net_context, buffer, length, timeout);  
     }
 }
 
@@ -247,34 +257,26 @@ uint8_t lwm2m_buffer_send(void * sessionH,
 
     if (connP == NULL)
     {
-        fprintf(stderr, "#> failed sending %lu bytes, missing connection\r\n",(unsigned long)length);
+        ATINY_LOG(LOG_INFO, "#> failed sending %lu bytes, missing connection\r\n",(unsigned long)length);
         return COAP_500_INTERNAL_SERVER_ERROR ;
     }
 
-    printf("call connection_send in lwm2m_buffer_send, length is %d\n",length);
-    
-    if (connP->dtls_flag == false) {
+    ATINY_LOG(LOG_INFO, "call connection_send in lwm2m_buffer_send, length is %d\n",length);
+
+#ifdef WITH_DTLS
+    if (connP->dtls_flag == true) {
         // no security
         return atiny_net_send(connP->net_context, buffer, length);
     } 
     else 
+#endif        
     {
         return dtls_write(connP->net_context, buffer, length);
         
     }
-/*
-    if (-1 == connection_send(connP, buffer, length))
-    {
-        fprintf(stderr, "#> failed sending %lu bytes\r\n", (unsigned long)length);
-        return COAP_500_INTERNAL_SERVER_ERROR ;
-    }
-*/
-    //return COAP_NO_ERROR;
 }
 
-bool lwm2m_session_is_equal(void * session1,
-                            void * session2,
-                            void * userData)
+bool lwm2m_session_is_equal(void * session1, void * session2, void * userData)
 {
     return (session1 == session2);
 }
