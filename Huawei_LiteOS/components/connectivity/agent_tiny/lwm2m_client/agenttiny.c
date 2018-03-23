@@ -38,6 +38,13 @@ extern void observe_handleAck(lwm2m_transaction_t * transacP, void * message);
 
 static handle_data_t g_atiny_handle;
 
+int atiny_state_is_ready(void *phandle)
+{
+    handle_data_t *tmp = (handle_data_t *)(phandle);
+
+    return (tmp->lwm2m_context->state == STATE_READY);
+}
+
 int  atiny_init(atiny_param_t* atiny_params, void ** phandle)
 {
      if (NULL == atiny_params || NULL == phandle)

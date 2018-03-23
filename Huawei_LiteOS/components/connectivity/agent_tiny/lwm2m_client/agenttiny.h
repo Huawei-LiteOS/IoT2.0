@@ -105,6 +105,19 @@ typedef struct
 } atiny_device_info_t;
 
 /*****************************************************************************
+ Function     : atiny_state_is_ready
+ Description  : 检查agent tiny是否注册成功
+ Input        : void *phandle
+ Output       : None
+ Return Value :
+            0 : agent tiny is not ready
+            1 : agent tiny is ready
+ Calls        :
+ Called By    :
+*****************************************************************************/
+int atiny_state_is_ready(void *phandle);
+
+/*****************************************************************************
  Function :    atiny_init  
  Description : lwm2m初始化，由agent_tiny实现
  Input       : atiny_params    lwm2m基本配置参数
