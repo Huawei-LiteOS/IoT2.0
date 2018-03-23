@@ -1,7 +1,9 @@
 #include "liblwm2m.h"
 #include "agenttiny.h"
 
-//#include "dtls_conn.h"
+
+#include "connection.h"
+
 
 #include <string.h>
 #include <stdlib.h>
@@ -118,9 +120,13 @@ UINT32 creat_report_task()
     return uwRet;
         
 }
-
-char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x92};
-char * g_endpoint_name = "11110000";
+#ifdef WITH_DTLS
+char * g_endpoint_name = "11110006";
+char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,
+    0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x96};
+#else
+char * g_endpoint_name = "22220006";
+#endif
 void lwm2m_main(int argc, char *argv[])
 {
      atiny_device_info_t *device_info = &g_device_info;
@@ -149,12 +155,22 @@ void lwm2m_main(int argc, char *argv[])
     security_param = &(atiny_params->security_params[0]);
     security_param->is_bootstrap = FALSE;
     security_param->server_ip = "139.159.209.89";
+#ifdef WITH_DTLS
     security_param->server_port = "5684";
-    //security_param->psk_Id = "666003";
+#else
+    security_param->server_port = "5683";
+#endif
+
+#ifdef WITH_DTLS
     security_param->psk_Id = g_endpoint_name;
     security_param->psk = g_psk_value;
     security_param->psk_len = 16;
- #if 0   
+#else
+    security_param->psk_Id      = NULL;
+    security_param->psk         = NULL;
+    security_param->psk_len     = 0;
+#endif
+#if 0   
     /*
       回调函数初始化
       */

@@ -64,11 +64,11 @@ extern "C" {
 #include <stdbool.h>
 #include <time.h>
 
-//#undefine WITH_MBEDTLS
 
-#ifdef WITH_MBEDTLS
+#ifdef WITH_DTLS
 #include "ssl.h"
 #endif
+
 #include "er-coap-13.h"
 #include "atiny_adapter.h"
 

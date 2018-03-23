@@ -16,7 +16,7 @@
 int atiny_get_bind_mode(char* mode,int len)
 {
     atiny_printf("bind type is UQS......\r\n");
-	atiny_snprintf(mode, len, "UQS");
+    atiny_snprintf(mode, len, "UQS");
     return ATINY_OK;
 }
 int atiny_get_power_current_1(int* arg)
@@ -67,7 +67,7 @@ int atiny_do_factory_reset(void)
 
 int atiny_get_serial_number(char* num,int len)
 {
-	atiny_snprintf(num, len, "345000123");
+    atiny_snprintf(num, len, "345000123");
     return ATINY_OK;
 }
 
