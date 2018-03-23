@@ -90,7 +90,7 @@ int atiny_test(void){
     report_data.type = APP_DATA;
     int cnt = 0;
     while(1){
-	if(g_phandle!=NULL){
+	if(g_phandle!=NULL && atiny_state_is_ready(g_phandle)){
         report_data.cookie = cnt;
         cnt++;
     	ret = atiny_data_report(g_phandle, &report_data);
