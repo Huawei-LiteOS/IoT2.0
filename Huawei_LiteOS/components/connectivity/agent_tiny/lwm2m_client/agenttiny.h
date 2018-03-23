@@ -23,9 +23,23 @@ extern "C" {
 
 typedef enum
 {
+   ATINY_GET_BINDING_MODES,
+   ATINY_GET_MODEL_NUMBER,
    ATINY_DO_DEV_REBOOT,
    ATINY_GET_MIN_VOLTAGE,
    ATINY_GET_MAX_VOLTAGE,
+   ATINY_GET_SERIAL_NUMBER,  
+   ATINY_GET_BATERRY_LEVEL,
+   ATINY_GET_MEMORY_FREE,
+   ATINY_GET_DEV_ERR,
+   //ATINY_GET_CURRENT_TIME,
+   //ATINY_GET_UTC_OFFSET,//从云端获取，与time_offset是否存在区别
+   //ATINY_GET_TIMEZONE,
+   ATINY_GET_POWER_CURRENT_1,
+   ATINY_GET_POWER_CURRENT_2,
+   ATINY_GET_POWER_SOURCE_1,
+   ATINY_GET_POWER_SOURCE_2,
+   ATINY_DO_FACTORY_RESET,
    ATINY_GET_FIRMWARE_VER,
    ATINY_TRIG_FIRMWARE_UPDATE,
    ATINY_GET_FIRMWARE_STATE,
@@ -33,8 +47,10 @@ typedef enum
    ATINY_GET_NETWORK_BEARER,
    ATINY_GET_SIGNAL_STRENGTH,
    ATINY_GET_CELL_ID,
+   ATINY_GET_LINK_QUALITY,
+   ATINY_GET_LINK_UTILIZATION,
    ATINY_WRITE_APP_DATA,
-   ATINY_UDATE_PSK,
+   ATINY_UPDATE_PSK,
 }atiny_cmd_e;
 /*****************************************************************************
  Function :    atiny_cmd_ioctl  
@@ -119,6 +135,7 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle);
 void atiny_deinit(void* phandle);
 
 #define MAX_REPORT_DATA_LEN      1024  /*待斟酌*/
+#define MAX_BUFFER_REPORT_CNT 8
 typedef enum
 {
     NOT_SENT = 0,
@@ -128,6 +145,7 @@ typedef enum
     SENT_SUCCESS,
     SENT_GET_RST,
     SEND_PENDING,
+    OBSERVE_CANCEL
 }DATA_SEND_STATUS;
 
 typedef void (*atiny_ack_callback) (atiny_report_type_e type, int cookie, DATA_SEND_STATUS status);
@@ -174,7 +192,7 @@ typedef enum
   ATINY_MSG_CONGEST         = -3,
   ATINY_MALLOC_FAILED       = -4,
   ATINY_RESOURCE_NOT_FOUND  = -5,
-  ATINY_BUF_NOT_ENOUGH      = -6,
+  ATINY_RESOURCE_NOT_ENOUGH      = -6,
   ATINY_CLIENT_UNREGISTERED = -7, 
   ATINY_SOCKET_CREATE_FAILED = -8,
 }atiny_error_e;

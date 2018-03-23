@@ -1,5 +1,6 @@
 #include "atiny_socket.h"
 #include "atiny_adapter.h"
+#include "agenttiny.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -78,9 +79,10 @@ void* atiny_net_connect( const char *host, const char *port, int proto )
             continue;
         }
 
-        if( connect( ctx->fd, cur->ai_addr, cur->ai_addrlen ) == 0 )
+        if( connect( ctx->fd, cur->ai_addr, cur->ai_addrlen ) == 0
+            && fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) | O_NONBLOCK ) == 0)
         {
-            ret = 0;
+            ret = ATINY_OK;
             break;
         }
 
@@ -201,7 +203,7 @@ void atiny_net_close( void *ctx )
     if( fd == -1 )
         return;
 
-    shutdown( fd, 2 );
+    shutdown( fd, SHUT_RDWR );
     close( fd );
     atiny_free(ctx);
 }

@@ -69,6 +69,8 @@ extern "C" {
 #ifdef WITH_MBEDTLS
 #include "ssl.h"
 #endif
+#include "er-coap-13.h"
+#include "atiny_adapter.h"
 
 
 
@@ -88,9 +90,9 @@ extern "C" {
 
 #ifndef LWM2M_MEMORY_TRACE
 // Allocate a block of size bytes of memory, returning a pointer to the beginning of the block.
-//void * lwm2m_malloc(size_t s);
+void * lwm2m_malloc(size_t s);
 // Deallocate a block of memory previously allocated by lwm2m_malloc() or lwm2m_strdup()
-//void lwm2m_free(void * p);
+void lwm2m_free(void * p);
 // Allocate a memory block, duplicate the string str in it and return a pointer to this new block.
 char * lwm2m_strdup(const char * str);
 #else
@@ -116,7 +118,7 @@ time_t lwm2m_gettime(void);
 #define LWM2M_WITH_LOGS
 #ifdef LWM2M_WITH_LOGS
 // Same usage as C89 printf()
-void lwm2m_printf(const char * format, ...);
+#define lwm2m_printf atiny_printf
 #endif
 
 // communication layer
@@ -597,7 +599,9 @@ struct _lwm2m_transaction_
     time_t                response_timeout; // timeout to wait for response, if token is used. When 0, use calculated acknowledge timeout.
     uint8_t  retrans_counter;
     time_t   retrans_time;
-    void * message;
+    coap_packet_t * message;
+    uint16_t buffer_len;
+    uint8_t * buffer;
     lwm2m_data_cfg_t   cfg;
     lwm2m_transaction_callback_t callback;
     void * userData;
@@ -715,12 +719,8 @@ int lwm2m_remove_object(lwm2m_context_t * contextP, uint16_t id);
 // If withObjects is true, the registration update contains the object list.
 int lwm2m_update_registration(lwm2m_context_t * contextP, uint16_t shortServerID, bool withObjects);
 
-enum
-{	  
-	  URI_OBSERVED,
-    URI_NOT_OBSERVED
-};
-int lwm2m_resource_value_changed(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
+
+void lwm2m_resource_value_changed(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
 
 typedef void(*lwm2m_observe_cancel_notify_t)(const lwm2m_context_t * contextP, const lwm2m_uri_t * uriP);
 void lwm2m_reg_observe_cancel_notify(lwm2m_observe_cancel_notify_t notify);

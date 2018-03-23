@@ -1,23 +1,12 @@
 #include "liblwm2m.h"
 #include "agenttiny.h"
 #include "object_comm.h"
-#if defined (WITH_TINYDTLS)
-#include "dtlsconnection.h"
-#elif defined(WITH_MBEDTLS)
 #include "dtls_conn.h"
-#include "dtls_interface.h"
-#else
-#include "dtls_conn.h"
-#endif
-#include <lwip/sockets.h>
 #include "internals.h"
 #include "agenttiny.h"
 #include "agent_list.h"
-#include "pdu.h"
-#include "cmsis_os.h"
 #include "atiny_log.h"
-#include "object_comm.h"
-#include "dtls_conn.h"
+#include "atiny_rpt.h"
 
 
 #define SERVER_URI_MAX_LEN  64
@@ -81,6 +70,13 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     if(atiny_params == NULL)
     {
         return ATINY_ARG_INVALID;
+    }
+
+    result = atiny_init_rpt();
+    if (result != ATINY_OK)
+    {
+        ATINY_LOG(LOG_FATAL, "atiny_init_rpt fail,ret=%d", result);
+        return result;
     }
     
     pdata = &handle->client_data;
@@ -168,17 +164,19 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     return ATINY_OK;
 }
 
-static int lwm2m_poll(lwm2m_context_t * contextP, struct timeval * timeoutP)
+static int lwm2m_poll(lwm2m_context_t* contextP, uint32_t* timeout)
 {
     client_data_t* dataP;  
     uint8_t buffer[MAX_PACKET_SIZE] = {0};
     int numBytes;
+    connection_t* connP;
 
     dataP = (client_data_t*)(contextP->userData);   
-    connection_t *connP = dataP->connList;
+    connP = dataP->connList;
+    
 	while (connP != NULL)
     {
-		numBytes = lwm2m_buffer_recv(connP, buffer, MAX_PACKET_SIZE);
+		numBytes = lwm2m_buffer_recv(connP, buffer, MAX_PACKET_SIZE, *timeout);
 		if(numBytes <= 0)
 		{
 			atiny_log("no packet arrived!");
@@ -196,11 +194,14 @@ static int lwm2m_poll(lwm2m_context_t * contextP, struct timeval * timeoutP)
 void atiny_detroy(void* handle)
 {
     handle_data_t *handle_data = (handle_data_t *)handle;
+
+    atiny_destory_rpt();
      
     if(handle_data == NULL)
     {
         return;  
     }
+   
 
     if(handle_data->lwm2m_context != NULL)
     {
@@ -246,28 +247,21 @@ void atiny_detroy(void* handle)
 
 static void atiny_observe_cancel_notify(const lwm2m_context_t * contextP, const lwm2m_uri_t * uriP)
 {
-    lwm2m_object_t * targetP;
-    
+   
     if(NULL == uriP)
     {
          ATINY_LOG(LOG_FATAL, "uriP null");
          return;
     }
 
-    LOG_URI(uriP);
-    targetP = (lwm2m_object_t *)LWM2M_LIST_FIND(contextP->objectList, uriP->objectId);
- 
-    if(NULL != targetP)
-    {
-        free_platform_object_rpt_list(targetP);
-        ATINY_LOG(LOG_INFO, "remove all rpt data by observe cancel");
-    }
+    atiny_clear_rpt_data(uriP, OBSERVE_CANCEL);
+    ATINY_LOG(LOG_INFO, "remove all rpt data by observe cancel");
 }
 
 int atiny_bind(atiny_device_info_t* device_info,void* phandle)
 {
     handle_data_t *handle = phandle;    
-    struct timeval tv;
+    uint32_t timeout;
     int ret;
 
     if((NULL == device_info) || (NULL == phandle))
@@ -303,15 +297,15 @@ int atiny_bind(atiny_device_info_t* device_info,void* phandle)
     
     while(!handle->atiny_quit)
     {                
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        time_t sec = (time_t)tv.tv_sec;
-        lwm2m_step(handle->lwm2m_context,&sec); 
-        lwm2m_poll(handle->lwm2m_context,&tv);
+        timeout = 10;
+
+        (void)atiny_step_rpt(handle->lwm2m_context);
+        lwm2m_step(handle->lwm2m_context,&timeout); 
+        lwm2m_poll(handle->lwm2m_context,&timeout);
     }
 
     atiny_detroy(phandle);
-
+ 
     return ATINY_OK;
 }
 
@@ -331,9 +325,9 @@ void atiny_deinit(void* handle)
 int atiny_data_report(void* phandle, data_report_t *report_data)
 {
     lwm2m_uri_t uri;
-    data_node_t* data_node;   
     lwm2m_context_t* atiny_context;
     int ret;
+    data_report_t data;
 
     handle_data_t *handle = (handle_data_t *)phandle;
    
@@ -343,6 +337,7 @@ int atiny_data_report(void* phandle, data_report_t *report_data)
         ATINY_LOG(LOG_FATAL, "invalid args");
         return ATINY_ARG_INVALID;
     }
+
     
     atiny_context = (lwm2m_context_t*)handle->lwm2m_context;
     if (atiny_context->state != STATE_READY)
@@ -365,43 +360,25 @@ int atiny_data_report(void* phandle, data_report_t *report_data)
             return ATINY_RESOURCE_NOT_FOUND;
     }
 
-    data_node = (data_node_t*)lwm2m_malloc(sizeof(data_node_t));
-    if (NULL == data_node)
+    memcpy(&data, report_data, sizeof(data));
+    data.buf = lwm2m_malloc(report_data->len);
+    if (NULL == data.buf)
     {
-        ATINY_LOG(LOG_ERR, "lwm2m_malloc fail");
-        return ATINY_MALLOC_FAILED;
+        ATINY_LOG(LOG_ERR, "lwm2m_malloc fail,len %d",data.len);
+        return ATINY_MALLOC_FAILED;;
     }
+    memcpy(data.buf, report_data->buf, report_data->len);
 
-    ret = ATINY_MALLOC_FAILED;
-    do
-    {
-        memset((void*)data_node, 0, sizeof(data_node_t));
-        data_node->data.cookie = report_data->cookie;
-        data_node->data.callback = report_data->callback;
-        data_node->data.type = report_data->type;
-        data_node->data.len = report_data->len;
-
-        data_node->data.buf = lwm2m_malloc(report_data->len);
-        if (NULL == data_node->data.buf)
-        {
-            ATINY_LOG(LOG_ERR, "lwm2m_malloc fail,len %d", report_data->len);
-            break;
-        }
-        
-        memcpy(data_node->data.buf, report_data->buf, report_data->len);
-        atiny_list_init(&(data_node->list)); 
-        ret = object_change(atiny_context, &uri, (uint8_t *)data_node, sizeof(data_node_t)); /*´íÎó×ª»»*/
-    }while(0);
+    ret = atiny_queue_rpt_data(&uri, &data);
 
     if(ATINY_OK != ret)
     {
-        if(data_node->data.buf != NULL)
+        if(data.buf != NULL)
         {
-            lwm2m_free(data_node->data.buf);
+            lwm2m_free(data.buf);
         }
-        lwm2m_free(data_node);
     }
-    lwm2m_resource_value_changed(atiny_context,&uri);
+    //lwm2m_resource_value_changed(atiny_context, &uri);
     return ret;
 }
 

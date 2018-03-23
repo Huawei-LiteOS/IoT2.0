@@ -367,9 +367,9 @@
             <v6LangP>1</v6LangP>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F429_439xx,USE_STDPERIPH_DRIVER,USE_MBED_TLS,MBEDTLS_CONFIG_FILE=&lt;los_mbedtls_config.h&gt;,WITH_LWIP,LWM2M_LITTLE_ENDIAN,LWM2M_CLIENT_MODE,NDEBUG</Define>
+              <Define>STM32F429_439xx,USE_STDPERIPH_DRIVER,USE_MBED_TLS,MBEDTLS_CONFIG_FILE=&lt;los_mbedtls_config.h&gt;,WITH_LWIP,LWM2M_LITTLE_ENDIAN,LWM2M_CLIENT_MODE,NDEBUG,WITH_DTLS</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\drivers\boards\STM32F429IGTX_FIRE\dwt;..\..\..\drivers\boards\STM32F429IGTX_FIRE\key;..\..\..\drivers\boards\STM32F429IGTX_FIRE\LAN8742A;..\..\..\drivers\boards\STM32F429IGTX_FIRE\led;..\..\..\drivers\boards\STM32F429IGTX_FIRE\usart;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\components\net\lwip-2.0.3\src\include;..\..\..\components\net\lwip_port;..\..\..\components\net\lwip_port\OS;..\..\..\components\connectivity\libcoap-4.1.2\include\coap;..\..\..\components\connectivity\libcoap-4.1.2\examples\lwip;..\..\..\components\connectivity\lwm2m\core;..\..\..\components\security\mbedtls\mbedtls_port;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include\mbedtls;..\..\..\components\connectivity\agent_tiny\comm\include;..\..\..\components\connectivity\agent_tiny\lwm2m_client;..\..\..\components\connectivity\agent_tiny\examples;..\..\..\components\connectivity\agent_tiny\osadapter</IncludePath>
+              <IncludePath>..\Inc;..\..\..\drivers\boards\STM32F429IGTX_FIRE\dwt;..\..\..\drivers\boards\STM32F429IGTX_FIRE\key;..\..\..\drivers\boards\STM32F429IGTX_FIRE\LAN8742A;..\..\..\drivers\boards\STM32F429IGTX_FIRE\led;..\..\..\drivers\boards\STM32F429IGTX_FIRE\usart;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\components\net\lwip-2.0.3\src\include;..\..\..\components\net\lwip_port;..\..\..\components\net\lwip_port\OS;..\..\..\components\connectivity\libcoap-4.1.2\include\coap;..\..\..\components\connectivity\libcoap-4.1.2\examples\lwip;..\..\..\components\connectivity\lwm2m\core;..\..\..\components\security\mbedtls\mbedtls_port;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include\mbedtls;..\..\..\components\connectivity\agent_tiny\comm\include;..\..\..\components\connectivity\agent_tiny\lwm2m_client;..\..\..\components\connectivity\agent_tiny\examples;..\..\..\components\connectivity\agent_tiny\osadapter;..\..\..\components\connectivity\lwm2m\core\er-coap-13</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1000,96 +1000,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>libcoap</GroupName>
-          <Files>
-            <File>
-              <FileName>address.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\address.c</FilePath>
-            </File>
-            <File>
-              <FileName>async.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\async.c</FilePath>
-            </File>
-            <File>
-              <FileName>block.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\block.c</FilePath>
-            </File>
-            <File>
-              <FileName>coap_io_lwip.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\coap_io_lwip.c</FilePath>
-            </File>
-            <File>
-              <FileName>coap_time.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\coap_time.c</FilePath>
-            </File>
-            <File>
-              <FileName>debug.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\debug.c</FilePath>
-            </File>
-            <File>
-              <FileName>encode.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\encode.c</FilePath>
-            </File>
-            <File>
-              <FileName>hashkey.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\hashkey.c</FilePath>
-            </File>
-            <File>
-              <FileName>mem.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\mem.c</FilePath>
-            </File>
-            <File>
-              <FileName>net.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\net.c</FilePath>
-            </File>
-            <File>
-              <FileName>option.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\option.c</FilePath>
-            </File>
-            <File>
-              <FileName>pdu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\pdu.c</FilePath>
-            </File>
-            <File>
-              <FileName>resource.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\resource.c</FilePath>
-            </File>
-            <File>
-              <FileName>str.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\str.c</FilePath>
-            </File>
-            <File>
-              <FileName>subscribe.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\subscribe.c</FilePath>
-            </File>
-            <File>
-              <FileName>uri.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\src\uri.c</FilePath>
-            </File>
-            <File>
-              <FileName>client.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\libcoap-4.1.2\examples\client.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>lwm2m</GroupName>
           <Files>
             <File>
@@ -1642,6 +1552,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\object_app.c</FilePath>
             </File>
+            <File>
+              <FileName>atiny_rpt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\atiny_rpt.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1671,6 +1586,16 @@
               <FileName>atiny_socket.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\osadapter\atiny_socket.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>er-coap</GroupName>
+          <Files>
+            <File>
+              <FileName>er-coap-13.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\lwm2m\core\er-coap-13\er-coap-13.c</FilePath>
             </File>
           </Files>
         </Group>

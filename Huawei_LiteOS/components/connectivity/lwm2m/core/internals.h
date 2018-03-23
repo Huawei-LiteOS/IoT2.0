@@ -61,10 +61,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-//#include "er-coap-13/er-coap-13.h"
-#include "pdu.h"
-#include "option.h"
-#include "los_memory.h"
+#include "er-coap-13/er-coap-13.h"
 
 #ifdef LWM2M_WITH_LOGS
 #include <inttypes.h>
@@ -243,17 +240,6 @@ typedef struct
 } bs_data_t;
 #endif
 
-static inline void * lwm2m_malloc(size_t s) 
-{  
-	void * mem = NULL;
-	mem = LOS_MemAlloc(m_aucSysMem0, s);
-	return mem;
-}
-static inline void lwm2m_free(void * p)
-{
-    if(NULL != p)
-        LOS_MemFree(m_aucSysMem0, p);
-}
 // defined in uri.c
 lwm2m_uri_t * uri_decode(char * altPath, multi_option_t *uriPath);
 int uri_getNumber(uint8_t * uriString, size_t uriLength);
@@ -263,7 +249,6 @@ int uri_toString(lwm2m_uri_t * uriP, uint8_t * buffer, size_t bufferLen, uri_dep
 uint8_t object_readData(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, int * sizeP, lwm2m_data_t ** dataP, lwm2m_data_cfg_t *cfg);
 uint8_t object_read(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_media_type_t * formatP, uint8_t ** bufferP, size_t * lengthP);
 uint8_t object_write(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_media_type_t format, uint8_t * buffer, size_t length);
-uint8_t object_change(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, uint8_t * buffer,size_t length);
 uint8_t object_create(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_media_type_t format, uint8_t * buffer, size_t length);
 uint8_t object_execute(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, uint8_t * buffer, size_t length);
 uint8_t object_delete(lwm2m_context_t * contextP, lwm2m_uri_t * uriP);
@@ -282,14 +267,14 @@ lwm2m_transaction_t * transaction_new(void * sessionH, unsigned char method, cha
 int transaction_send(lwm2m_context_t * contextP, lwm2m_transaction_t * transacP);
 void transaction_free(lwm2m_transaction_t * transacP);
 void transaction_remove(lwm2m_context_t * contextP, lwm2m_transaction_t * transacP);
-bool transaction_handleResponse(lwm2m_context_t * contextP, void * fromSessionH, coap_pdu_t * message, coap_pdu_t * response);
+bool transaction_handleResponse(lwm2m_context_t * contextP, void * fromSessionH, coap_packet_t * message, coap_packet_t * response);
 void transaction_step(lwm2m_context_t * contextP, time_t currentTime, time_t * timeoutP);
 
 // defined in management.c
-uint8_t dm_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, coap_pdu_t * message, coap_pdu_t * response);
+uint8_t dm_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, coap_packet_t * message, coap_packet_t * response);
 
 // defined in observe.c
-uint8_t observe_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, int size, lwm2m_data_t * dataP, coap_pdu_t * message, coap_pdu_t * response);
+uint8_t observe_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, int size, lwm2m_data_t * dataP, coap_packet_t * message, coap_packet_t * response);
 void observe_cancel(lwm2m_context_t * contextP, uint16_t mid, void * fromSessionH);
 uint8_t observe_setParameters(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, lwm2m_server_t * serverP, lwm2m_attributes_t * attrP);
 void observe_step(lwm2m_context_t * contextP, time_t currentTime, time_t * timeoutP);
@@ -308,7 +293,7 @@ void registration_step(lwm2m_context_t * contextP, time_t currentTime, time_t * 
 lwm2m_status_t registration_getStatus(lwm2m_context_t * contextP);
 
 // defined in packet.c
-uint8_t message_send(lwm2m_context_t * contextP, coap_pdu_t * message, void * sessionH);
+uint8_t message_send(lwm2m_context_t * contextP, coap_packet_t * message, void * sessionH);
 
 // defined in bootstrap.c
 void bootstrap_step(lwm2m_context_t * contextP, uint32_t currentTime, time_t* timeoutP);

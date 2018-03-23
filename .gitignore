@@ -1,0 +1,9 @@
+
+*.o
+Huawei_LiteOS\targets\STM32F429IGTX_FIRE\MDK-ARM\Objects
+Huawei_LiteOS/targets/STM32F429IGTX_FIRE/MDK-ARM/Objects/stm32f4xx_it.crf
+Huawei_LiteOS/targets/STM32F429IGTX_FIRE/MDK-ARM/RTE/_HuaweiLiteOS/RTE_Components.h
+Huawei_LiteOS/targets/STM32F429IGTX_FIRE/MDK-ARM/Objects/xtea.crf
+Huawei_LiteOS/targets/STM32F429IGTX_FIRE/MDK-ARM/Listings/Huawei_LiteOS.map
+Huawei_LiteOS/targets/STM32F429IGTX_FIRE/MDK-ARM/DebugConfig/HuaweiLiteOS_STM32F429IGTx.dbgconf
+targets\STM32F429IGTX_FIRE\MDK-ARM\Listings

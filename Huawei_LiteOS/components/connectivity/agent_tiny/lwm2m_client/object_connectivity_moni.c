@@ -116,7 +116,9 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         return COAP_205_CONTENT;
     }
     case RES_O_LINK_QUALITY: //s-int
-        lwm2m_data_encode_int(connDataP->linkQuality, dataP);
+    	int linkQuality;
+    	atiny_cmd_ioctl(ATINY_GET_LINK_QUALITY, (char*)&linkQuality, sizeof(int));
+        lwm2m_data_encode_int(linkQuality, dataP);
         return COAP_205_CONTENT ;
 
     case RES_M_IP_ADDRESSES:
@@ -148,6 +150,8 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
  //       break;
 
     case RES_O_LINK_UTILIZATION:
+		int linkUtilization;
+    	atiny_cmd_ioctl(ATINY_GET_LINK_UTILIZATION, (char*)&linkUtilization, sizeof(int));
         lwm2m_data_encode_int(connDataP->linkUtilization, dataP);
         return COAP_205_CONTENT;
 
