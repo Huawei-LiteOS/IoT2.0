@@ -193,6 +193,8 @@ static void prv_handleRegistrationReply(lwm2m_transaction_t * transacP,
     coap_packet_t * packet = (coap_packet_t *)message;
     lwm2m_server_t * targetP = (lwm2m_server_t *)(transacP->userData);
 
+    LOG("come into  prv_handleRegistrationReply!!");
+    printf("come25 into  prv_handleRegistrationReply!!\n");
     if (targetP->status == STATE_REG_PENDING)
     {
         time_t tv_sec = lwm2m_gettime();
