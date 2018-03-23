@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "dtls_conn.h"
+#include "connection.h"
 #include "dtls_interface.h"
 #include "atiny_socket.h"
 #include "atiny_log.h"
@@ -156,7 +156,6 @@ void connection_free(connection_t * connP)
 {
 #ifdef WITH_DTLS    
     if (connP->dtls_flag == true) {
-        // no security
         dtls_ssl_destroy(connP->net_context);
     }
 	else

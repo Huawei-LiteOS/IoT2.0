@@ -2884,18 +2884,6 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\components\connectivity\agent_tiny\lwm2m_client\dtls_conn.c</PathWithFileName>
-      <FilenameWithoutPath>dtls_conn.c</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>13</GroupNumber>
-      <FileNumber>214</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\components\connectivity\agent_tiny\lwm2m_client\commandline.c</PathWithFileName>
       <FilenameWithoutPath>commandline.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
@@ -2903,7 +2891,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>215</FileNumber>
+      <FileNumber>214</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -2915,7 +2903,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>216</FileNumber>
+      <FileNumber>215</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -2927,13 +2915,25 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>217</FileNumber>
+      <FileNumber>216</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\components\connectivity\agent_tiny\lwm2m_client\atiny_rpt.c</PathWithFileName>
       <FilenameWithoutPath>atiny_rpt.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>13</GroupNumber>
+      <FileNumber>217</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\..\..\components\connectivity\agent_tiny\lwm2m_client\connection.c</PathWithFileName>
+      <FilenameWithoutPath>connection.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

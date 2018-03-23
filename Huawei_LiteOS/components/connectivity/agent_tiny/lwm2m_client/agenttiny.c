@@ -2,7 +2,13 @@
 #include "internals.h"
 #include "agenttiny.h"
 #include "object_comm.h"
-#include "dtls_conn.h"
+#ifdef WITH_DTLS
+#include "dtls_interface.h"
+#endif
+#include "connection.h"
+#include "internals.h"
+#include "agenttiny.h"
+#include "agent_list.h"
 #include "atiny_log.h"
 #include "atiny_rpt.h"
 

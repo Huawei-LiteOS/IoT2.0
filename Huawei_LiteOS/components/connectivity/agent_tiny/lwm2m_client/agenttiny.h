@@ -6,6 +6,7 @@ extern "C" {
 
 #include <stdarg.h>
 #include <stdio.h>
+#include "atiny_adapter.h"
 #include "liblwm2m.h"
 
 

@@ -1,3 +1,5 @@
+#include "agenttiny.h"
+#include "connection.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -129,7 +131,7 @@ void lwm2m_main(int argc, char *argv[])
     {
         return;
     }
-#if 1
+#ifdef WITH_DTLS
     device_info->endpoint_name = g_endpoint_name;
     device_info->manufacturer = "test";
     atiny_params = &g_atiny_params;

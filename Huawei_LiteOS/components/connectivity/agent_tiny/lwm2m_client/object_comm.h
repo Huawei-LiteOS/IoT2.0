@@ -31,7 +31,7 @@
 #include "liblwm2m.h"
 #include "internals.h"
 #include "agenttiny.h"
-#include "dtls_conn.h"
+#include "connection.h"
 #include "agent_list.h"
 
 extern int g_reboot;

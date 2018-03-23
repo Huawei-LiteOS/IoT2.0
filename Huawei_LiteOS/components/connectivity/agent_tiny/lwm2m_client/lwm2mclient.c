@@ -62,7 +62,7 @@
 #if defined (WITH_DTLS)
 #include "dtls_interface.h"
 #endif
-#include "dtls_conn.h"
+#include "connection.h"
 
 #include <string.h>
 #include <stdlib.h>
