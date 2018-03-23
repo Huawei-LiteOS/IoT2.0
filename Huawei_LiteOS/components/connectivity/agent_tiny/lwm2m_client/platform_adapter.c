@@ -60,6 +60,6 @@ int lwm2m_strncmp(const char * s1,
 
 time_t lwm2m_gettime(void)
 {
-    return (uint32_t)(atiny_gettime_ms()*1000);
+    return (uint32_t)(atiny_gettime_ms()/1000);
 }
 
