@@ -231,15 +231,24 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                             format = LWM2M_CONTENT_TLV;
                         }
 
-                        res = lwm2m_data_serialize(uriP, size, dataP, &format, &buffer);
-                        if (res < 0)
+                        if(dm_isUriOpaqueHandle(uriP))
                         {
-                            result = COAP_500_INTERNAL_SERVER_ERROR;
+                            buffer = NULL;
+                            length = 0;
+                            format = LWM2M_CONTENT_OPAQUE;
                         }
                         else
                         {
-                            length = (size_t)res;
-                            LOG_ARG("Observe Request[/%d/%d/%d]: %.*s\n", uriP->objectId, uriP->instanceId, uriP->resourceId, length, buffer);
+                            res = lwm2m_data_serialize(uriP, size, dataP, &format, &buffer);
+                            if (res < 0)
+                            {
+                                result = COAP_500_INTERNAL_SERVER_ERROR;
+                            }
+                            else
+                            {
+                                length = (size_t)res;
+                                LOG_ARG("Observe Request[/%d/%d/%d]: %.*s\n", uriP->objectId, uriP->instanceId, uriP->resourceId, length, buffer);
+                            }
                         }
                     }
                     lwm2m_data_free(size, dataP);
@@ -261,6 +270,8 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
 
                 result = object_read(contextP, uriP, &format, &buffer, &length);
             }
+
+            
             if (COAP_205_CONTENT == result)
             {
                 coap_set_header_content_type(response, format);

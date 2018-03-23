@@ -338,5 +338,10 @@ size_t utils_base64Encode(uint8_t * dataP, size_t dataLen, uint8_t * bufferP, si
 lwm2m_server_t * utils_findServer(lwm2m_context_t * contextP, void * fromSessionH);
 lwm2m_server_t * utils_findBootstrapServer(lwm2m_context_t * contextP, void * fromSessionH);
 #endif
+static inline int dm_isUriOpaqueHandle(const lwm2m_uri_t * uriP)
+{
+    return (19 == uriP->objectId);
+}
+
 
 #endif

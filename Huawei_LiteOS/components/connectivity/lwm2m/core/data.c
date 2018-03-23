@@ -616,9 +616,7 @@ int lwm2m_data_serialize(lwm2m_uri_t * uriP,
         return -1;
     }
 
-    
-
-    if (uriP->objectId == 19) 
+    if (dm_isUriOpaqueHandle(uriP)) 
     {    
         *formatP = LWM2M_CONTENT_OPAQUE;
     }
