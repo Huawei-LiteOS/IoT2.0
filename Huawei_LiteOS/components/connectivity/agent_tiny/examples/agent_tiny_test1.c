@@ -1,9 +1,3 @@
-#include "liblwm2m.h"
-#include "agenttiny.h"
-
-
-#include "connection.h"
-
 
 #include <string.h>
 #include <stdlib.h>
@@ -13,9 +7,11 @@
 #include <lwip/netdb.h>
 #include <lwip/errno.h>
 #include <signal.h>
-#include "internals.h"
-#include "los_sys.h"
 
+#include "internals.h"
+#include "liblwm2m.h"
+
+#include "los_sys.h"
 #include "los_base.h"
 #include "los_config.h"
 #include "los_typedef.h"
@@ -120,13 +116,9 @@ UINT32 creat_report_task()
     return uwRet;
         
 }
-#ifdef WITH_DTLS
-char * g_endpoint_name = "11110006";
-char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,
-    0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x96};
-#else
-char * g_endpoint_name = "22220006";
-#endif
+
+char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x93};
+char *g_endpoint_name = "11110003";
 void lwm2m_main(int argc, char *argv[])
 {
      atiny_device_info_t *device_info = &g_device_info;
@@ -137,10 +129,24 @@ void lwm2m_main(int argc, char *argv[])
     {
         return;
     }
-    //device_info->endpoint_name = "urn:imei:15700077089";
-    //device_info->endpoint_name = "666004";
-    //device_info->endpoint_name = "666003";
+#if 1
     device_info->endpoint_name = g_endpoint_name;
+    device_info->manufacturer = "test";
+    atiny_params = &g_atiny_params;
+    atiny_params->server_params.binding = "UQS";
+    atiny_params->server_params.life_time = 50000;
+    atiny_params->server_params.storing = FALSE;
+    atiny_params->server_params.storing_cnt = 0;
+    
+    security_param = &(atiny_params->security_params[0]);
+    security_param->is_bootstrap = FALSE;
+    security_param->server_ip = "139.159.209.89";
+    security_param->server_port = "5684";
+    security_param->psk_Id = g_endpoint_name;
+    security_param->psk = g_psk_value;
+    security_param->psk_len = 16;
+#else
+    device_info->endpoint_name = "22220003";
     device_info->manufacturer = "test";
     
     //void* phandle;
@@ -148,65 +154,21 @@ void lwm2m_main(int argc, char *argv[])
     atiny_params = &g_atiny_params;
 
     atiny_params->server_params.binding = "UQS";
-    atiny_params->server_params.life_time = 20;
+    atiny_params->server_params.life_time = 50000;
     atiny_params->server_params.storing = FALSE;
     atiny_params->server_params.storing_cnt = 0;
     
     security_param = &(atiny_params->security_params[0]);
     security_param->is_bootstrap = FALSE;
     security_param->server_ip = "139.159.209.89";
-#ifdef WITH_DTLS
-    security_param->server_port = "5684";
-#else
     security_param->server_port = "5683";
-#endif
-
-#ifdef WITH_DTLS
-    security_param->psk_Id = g_endpoint_name;
-    security_param->psk = g_psk_value;
-    security_param->psk_len = 16;
-#else
-    security_param->psk_Id      = NULL;
-    security_param->psk         = NULL;
-    security_param->psk_len     = 0;
-#endif
-#if 0   
-    /*
-      回调函数初始化
-      */
-    //..............................................
-    atiny_params->device_reboot = device_reboot;
-    atiny_params->get_device_voltage = atiny_test_get_device_voltage;
-    atiny_params->get_firmware_version = atiny_test_get_firmware_version;
-    atiny_params->firmware_update = atiny_test_firmware_update;
-    atiny_params->get_firmware_update_state = atiny_test_get_firmware_update_state;
-    atiny_params->get_firmware_update_result = atiny_test_get_firmware_update_result;
-    atiny_params->get_network_bearer = atiny_test_get_network_bearer;
-    atiny_params->get_singal_strength = atiny_test_get_singal_strength;
-
-    atiny_params->get_cell_id = atiny_test_get_cell_id;
-
-    atiny_params->app_write = atiny_test_app_write_callback;
-
-
-     atiny_device_reboot_fn              device_reboot;
-    atiny_get_device_voltage_fn         get_device_voltage;
-    
-    atiny_get_firmware_version_fn       get_firmware_version;
-    atiny_firmware_update_fn            firmware_update;
-    atiny_get_firmware_update_state_fn  get_firmware_update_state;  /*当前升级状态，支持主动上报*/
-    atiny_get_firmware_update_result_fn get_firmware_update_result; /*下载和升级状态，支持主动上报*/
-    
-    atiny_get_network_bearer_fn  get_network_bearer;
-    atiny_get_singal_strength_fn get_singal_strength;
-    atiny_get_cell_id_fn        get_cell_id;
-
-    atiny_app_write_callback app_write;
+    security_param->psk_Id = NULL;
+    security_param->psk = NULL;
+    security_param->psk_len = 0;
 #endif
     //..............................................
     if(ATINY_OK != atiny_init(atiny_params, &g_phandle))
     {
-        LOS_MemFree(m_aucSysMem0,atiny_params);
         return;
     }
     creat_report_task();

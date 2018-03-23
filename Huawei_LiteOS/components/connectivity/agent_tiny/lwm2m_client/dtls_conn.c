@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "connection.h"
+#include "dtls_conn.h"
 #include "dtls_interface.h"
 #include "atiny_socket.h"
 #include "atiny_log.h"
@@ -38,9 +38,7 @@ connection_t * connection_create(connection_t * connList,
     char * uri;
     char * host;
     char * port;
-#ifdef WITH_DTLS
     int ret;
-#endif
     ATINY_LOG(LOG_INFO, "now come into connection_create!!!");
   
     security_instance_t * targetP = (security_instance_t *)LWM2M_LIST_FIND(securityObj->instanceList, instanceId);
@@ -129,6 +127,7 @@ connection_t * connection_create(connection_t * connList,
 	        lwm2m_free(connP);
 	        return NULL;
 	    }
+			  connP->dtls_flag = true;			
     }
     else
 #endif        
@@ -141,6 +140,7 @@ connection_t * connection_create(connection_t * connList,
 						lwm2m_free(connP);
 						return NULL;
 				}
+			  connP->dtls_flag = false;
     }
 	connP->next = connList;
     connP->securityObj = securityObj;
@@ -153,10 +153,17 @@ connection_t * connection_create(connection_t * connList,
 void connection_free(connection_t * connP)
 {
 #ifdef WITH_DTLS    
-    dtls_ssl_destroy(connP->net_context);     
-#else
-    atiny_net_close(connP->net_context);
-#endif
+    if (connP->dtls_flag == true) {
+        // no security
+        dtls_ssl_destroy(connP->net_context);
+    }
+	else
+#endif        
+    {
+		atiny_net_close(connP->net_context);
+    }
+
+    return;
 }
 
 void * lwm2m_connect_server(uint16_t secObjInstID, void * userData)
@@ -230,10 +237,15 @@ int lwm2m_buffer_recv(void * sessionH, uint8_t * buffer, size_t length, uint32_t
     timeout*=1000;
 
 #ifdef WITH_DTLS
-    return dtls_read(connP->net_context, buffer, length, timeout);  
-#else      
-    return atiny_net_recv_timeout(connP->net_context, buffer, length, timeout);  
-#endif
+    if (connP->dtls_flag == true) {
+        //security
+        return dtls_read(connP->net_context, buffer, length, timeout);
+    } 
+    else  
+#endif      
+    {
+        return atiny_net_recv_timeout(connP->net_context, buffer, length, timeout);  
+    }
 }
 
 uint8_t lwm2m_buffer_send(void * sessionH,
@@ -252,10 +264,15 @@ uint8_t lwm2m_buffer_send(void * sessionH,
     ATINY_LOG(LOG_INFO, "call connection_send in lwm2m_buffer_send, length is %d\n",length);
 
 #ifdef WITH_DTLS
-    return dtls_write(connP->net_context, buffer, length);
-#else   
-    return atiny_net_send(connP->net_context, buffer, length);
+    if (connP->dtls_flag == true) {
+        // no security
+	    return dtls_write(connP->net_context, buffer, length);
+    } 
+    else 
 #endif        
+    {
+        return atiny_net_send(connP->net_context, buffer, length);   
+    }
 }
 
 bool lwm2m_session_is_equal(void * session1, void * session2, void * userData)

@@ -1,6 +1,3 @@
-#include "atiny_socket.h"
-#include "atiny_adapter.h"
-#include "agenttiny.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -9,6 +6,11 @@
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
 #include <lwip/errno.h>
+
+#include "atiny_socket.h"
+#include "atiny_adapter.h"
+#include "agenttiny.h"
+
 #define _SOCKLEN_T
 
 typedef struct
@@ -175,8 +177,10 @@ int atiny_net_send( void *ctx, const unsigned char *buf, size_t len )
     int fd = ((atiny_net_context*)ctx)->fd;
 
     if( fd < 0 )
+    {
         return( ATINY_ERR_INVALID_CONTEXT );
-
+    }
+    
     ret = (int) write( fd, buf, len );
 
     if( ret < 0 )

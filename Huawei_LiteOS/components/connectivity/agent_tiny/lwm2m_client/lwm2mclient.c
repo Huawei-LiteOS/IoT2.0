@@ -59,10 +59,14 @@
 #include "object_comm.h"
 #include "liblwm2m.h"
 #include "commandline.h"
-#if defined (WITH_DTLS)
+#if defined (WITH_TINYDTLS)
+#include "dtlsconnection.h"
+#elif defined(WITH_MBEDTLS)
+#include "dtls_conn.h"
 #include "dtls_interface.h"
+#else
+#include "dtls_conn.h"
 #endif
-#include "connection.h"
 
 #include <string.h>
 #include <stdlib.h>
