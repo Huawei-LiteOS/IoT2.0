@@ -37,11 +37,11 @@ typedef struct _connection_t
     void* net_context;
     lwm2m_object_t * securityObj;
     int securityInstId;
+	bool dtls_flag;
 	lwm2m_context_t * lwm2mH;
 } connection_t;
 
-connection_t * connection_create(connection_t * connList, lwm2m_object_t * securityObj,
-    int instanceId, lwm2m_context_t * lwm2mH);
+connection_t * connection_create(connection_t * connList, lwm2m_object_t * securityObj, int instanceId, lwm2m_context_t * lwm2mH);
 
 void connection_free(connection_t * connList);
 

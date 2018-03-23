@@ -30,7 +30,7 @@
 #include "liblwm2m.h"
 #include "internals.h"
 #include "agenttiny.h"
-#include "connection.h"
+#include "dtls_conn.h"
 extern int g_reboot;
 
 typedef struct

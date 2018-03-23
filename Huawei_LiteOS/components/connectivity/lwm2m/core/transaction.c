@@ -139,14 +139,7 @@ static int prv_checkFinished(lwm2m_transaction_t * transacP,
     {
         if (memcmp(transactionMessage->token, token, len)==0) return 1;
     }
-    printf("transactionMessage->token_len is %d, len is %d\n",transactionMessage->token_len,len);
-    int i = 0;
-    for(i=0;i<transactionMessage->token_len;i++ )
-        printf("%d\n",transactionMessage->token[i]);
-    printf("\n\n");
-    for(i=0;i<len;i++)
-        printf("%d\n",token[i]);
-    printf("prv_checkFinished not finish!!!\n");
+
     return 0;
 }
 //transaction_new(server->sessionH, COAP_POST, NULL, NULL, contextP->nextMID++, 4, NULL)
@@ -238,9 +231,6 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
             temp_token[5] = tv_sec >> 24;
             // use just the provided amount of bytes
             coap_set_header_token(transacP->message, temp_token, token_len);
-            int i;
-            for(i=0;i<token_len;i++)
-                printf("send token is %d\n",temp_token[i]);
         }
     }
 
@@ -283,8 +273,7 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
     bool reset = false;
     lwm2m_transaction_t * transacP;
 
-    //LOG("Entering");
-    LOG_ARG("Entering,message->code: %d",message->code);
+    LOG("Entering");
     transacP = contextP->transactionList;
 
     while (NULL != transacP)
@@ -321,7 +310,6 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
     	            {
         	        transacP->ack_received = false;
             	        transacP->retrans_time += COAP_RESPONSE_TIMEOUT;
-                        printf("timeout in transaction_handleResponse\n");
                         return true;
                     }
                 }       
@@ -348,18 +336,12 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
                 {
                     transacP->retrans_time += COAP_RESPONSE_TIMEOUT * transacP->retrans_counter;
                 }
-                printf("only true25,fromSessionH is %p, transacP->peerH is %p\n",fromSessionH,transacP->peerH);
                 return true;
             }
-        }
-        else
-        {
-            printf("error25,fromSessionH is %p, transacP->peerH is %p\n",fromSessionH,transacP->peerH);
         }
 
         transacP = transacP->next;
     }
-    printf("error25,return false in transaction_handleResponse\n");
     return false;
 }
 //transacP中对象，除buffer外已经赋值
@@ -368,7 +350,6 @@ int transaction_send(lwm2m_context_t * contextP,
 {
     bool maxRetriesReached = false;
     coap_packet_t * message = transacP->message;
-    int ret;
 
     LOG("Entering");
 
@@ -428,11 +409,11 @@ int transaction_send(lwm2m_context_t * contextP,
 
         if (COAP_MAX_RETRANSMIT + 1 >= transacP->retrans_counter)
         {
-            ret=lwm2m_buffer_send(transacP->peerH, transacP->buffer, transacP->buffer_len, contextP->userData);
+            (void)lwm2m_buffer_send(transacP->peerH, transacP->buffer, transacP->buffer_len, contextP->userData);
             output_buffer(stderr, (uint8_t *)(transacP->buffer), transacP->buffer_len, 0);
             transacP->retrans_time += timeout;
             transacP->retrans_counter += 1;
-            LOG_ARG("send %d bytes, retrans_counter:%d", ret,transacP->retrans_counter);
+            LOG_ARG("send, retrans_counter:%d", transacP->retrans_counter);
         }
         else
         {

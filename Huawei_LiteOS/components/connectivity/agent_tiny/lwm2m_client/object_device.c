@@ -168,10 +168,10 @@ static int prv_check_time_offset(char * buffer,
 static uint8_t prv_set_value(lwm2m_data_t * dataP,
                              device_data_t * devDataP)
 {
-    char str[30] = "";
     // a simple switch structure is used to respond at the specified resource asked
     switch (dataP->id)
     {
+    char str[30] = "";
     case RES_O_MANUFACTURER:
 		lwm2m_data_encode_string(devDataP->device_manufacutre, dataP);
         return COAP_205_CONTENT;
@@ -255,19 +255,16 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
     }
 
     case RES_O_BATTERY_LEVEL:
-    {
 		int battery_level;
         atiny_cmd_ioctl(ATINY_GET_BATERRY_LEVEL, (char*)&battery_level, sizeof(int));
         lwm2m_data_encode_int(battery_level, dataP);
         return COAP_205_CONTENT;
-    }
+
     case RES_O_MEMORY_FREE:
-    {
 		int free_memory;
         atiny_cmd_ioctl(ATINY_GET_MEMORY_FREE, (char*)&free_memory, sizeof(int));
         lwm2m_data_encode_int(free_memory, dataP);
         return COAP_205_CONTENT;
-    }
 
     case RES_M_ERROR_CODE:
     {
