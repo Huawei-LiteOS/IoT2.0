@@ -1,11 +1,12 @@
-#include "atiny_rpt.h"
-#include "agenttiny.h"
 #include <string.h>
 #include <stdio.h>
-#include "agent_list.h"
-#include "atiny_log.h"
 #include "liblwm2m.h"
 #include "internals.h"
+#include "atiny_rpt.h"
+#include "agenttiny.h"
+#include "agent_list.h"
+#include "atiny_log.h"
+#include "atiny_adapter.h"
 
 
 #define URI_FORMAT "uri(flag:0x%x,objId:%d,instId:%d,resId:%d)"
