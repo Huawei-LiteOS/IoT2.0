@@ -192,8 +192,9 @@
  * Default range for DTLS retransmission timer value, in milliseconds.
  * RFC 6347 4.2.4.1 says from 1 second to 60 seconds.
  */
-#define MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MIN    1000
-#define MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MAX   60000
+#define MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MULTI 4
+#define MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MIN    (1000*MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MULTI)
+#define MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MAX   (60000*MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MULTI)
 
 /**
  * \name SECTION: Module settings
