@@ -68,7 +68,7 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     char serverUri[SERVER_URI_MAX_LEN];
     int serverId = 123;
     atiny_security_param_t *server_object_param = atiny_params->security_params;
-    const char * localPort = server_object_param->server_port;
+    //const char * localPort = server_object_param->server_port;
     char * epname = (char *)device_info->endpoint_name;
 
         /*init objects*/
@@ -97,9 +97,9 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
         return ATINY_MALLOC_FAILED;
     } 
     
-    #if defined WITH_DTLS
+ 
     pdata->lwm2mH = lwm2m_context;
-    #endif
+ 
 
     handle->lwm2m_context = lwm2m_context;
 
@@ -188,6 +188,7 @@ static int lwm2m_poll(lwm2m_context_t* contextP, uint32_t* timeout)
 		}
 		else
 		{
+		    output_buffer(stderr, buffer, numBytes, 0);
 			lwm2m_handle_packet(contextP, buffer, numBytes, connP);
 		}
 	    connP = connP->next;
