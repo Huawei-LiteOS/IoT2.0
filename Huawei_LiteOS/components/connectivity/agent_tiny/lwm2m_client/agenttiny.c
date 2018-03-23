@@ -80,7 +80,7 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     pdata = &handle->client_data;
     memset(pdata, 0, sizeof(client_data_t));
 
-    ATINY_LOG(LOG_INFO, "Trying to bind LWM2M Client to port %s", localPort);
+    ATINY_LOG(LOG_INFO, "Trying to init objects");
     
     
     lwm2m_context = lwm2m_init(pdata);
@@ -90,7 +90,7 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
         return ATINY_MALLOC_FAILED;
     } 
     
-    #if defined (WITH_TINYDTLS) || defined(WITH_MBEDTLS)
+    #if defined WITH_DTLS
     pdata->lwm2mH = lwm2m_context;
     #endif
 
