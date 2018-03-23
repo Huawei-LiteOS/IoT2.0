@@ -13,10 +13,10 @@
 #define ATINY_POWER_CURRENT_1   125
 #define ATINY_POWER_CURRENT_2   900
 
-int atiny_get_bind_mode(char* arg)
+int atiny_get_bind_mode(char* mode,int len)
 {
     atiny_printf("bind type is UQS......\r\n");
-	arg = "UQS";
+    atiny_snprintf(mode, len, "UQS");
     return ATINY_OK;
 }
 int atiny_get_power_current_1(int* arg)
@@ -47,10 +47,9 @@ int atiny_get_dev_err(int* arg)
     return ATINY_OK;
 }
 
-int atiny_get_model_mode(char* arg)
+int atiny_get_model_mode(char* mode,int len)
 {
-    atiny_printf("model mode is Lightweight M2M Client......\r\n");
-	arg = "Lightweight M2M Client";
+    atiny_snprintf(mode, len, "Lightweight M2M Client");
     return ATINY_OK;
 }
 
@@ -66,10 +65,9 @@ int atiny_do_factory_reset(void)
     return ATINY_OK;
 }
 
-int atiny_get_serial_number(char* arg)
+int atiny_get_serial_number(char* num,int len)
 {
-	arg = "345000123";
-    atiny_printf("serial number is 345000123......\r\n");
+    atiny_snprintf(num, len, "345000123");
     return ATINY_OK;
 }
 
@@ -168,10 +166,10 @@ int atiny_cmd_ioctl(atiny_cmd_e cmd, char* arg, int len)
     switch(cmd)
     {
 		case ATINY_GET_BINDING_MODES:
-		 	result = atiny_get_bind_mode(arg);
+		 	result = atiny_get_bind_mode(arg, len);
 			break;
 		case ATINY_GET_MODEL_NUMBER:
-			result = atiny_get_model_mode(arg);
+			result = atiny_get_model_mode(arg, len);
 			break;
         case ATINY_DO_DEV_REBOOT:
              result = atiny_do_dev_reboot();
@@ -208,7 +206,7 @@ int atiny_cmd_ioctl(atiny_cmd_e cmd, char* arg, int len)
 			result = atiny_do_factory_reset();
             break;
 		case ATINY_GET_SERIAL_NUMBER:
-			result = atiny_get_serial_number(arg);
+			result = atiny_get_serial_number(arg, len);
             break;
         case ATINY_GET_FIRMWARE_VER:
             result = atiny_get_firmware_ver(arg, len);

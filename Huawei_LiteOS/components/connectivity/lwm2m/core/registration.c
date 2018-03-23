@@ -193,6 +193,8 @@ static void prv_handleRegistrationReply(lwm2m_transaction_t * transacP,
     coap_packet_t * packet = (coap_packet_t *)message;
     lwm2m_server_t * targetP = (lwm2m_server_t *)(transacP->userData);
 
+    LOG("come into  prv_handleRegistrationReply!!");
+    printf("come25 into  prv_handleRegistrationReply!!\n");
     if (targetP->status == STATE_REG_PENDING)
     {
         time_t tv_sec = lwm2m_gettime();
@@ -1300,7 +1302,7 @@ void registration_step(lwm2m_context_t * contextP,
         case STATE_REGISTERED:
         {
             time_t nextUpdate;
-            INT32  interval;
+            int32_t  interval;
 
             nextUpdate = targetP->lifetime;
             if (COAP_MAX_TRANSMIT_WAIT < nextUpdate)
@@ -1312,7 +1314,7 @@ void registration_step(lwm2m_context_t * contextP,
                 nextUpdate = nextUpdate >> 1;
             }
 
-            interval = (INT32)(targetP->registration + nextUpdate) - (INT32)currentTime;
+            interval = (int32_t)(targetP->registration + nextUpdate) - (int32_t)currentTime;
             if (0 >= interval)
             {
                 LOG("Updating registration");

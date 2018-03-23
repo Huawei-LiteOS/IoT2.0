@@ -63,8 +63,6 @@
 
 #include "er-coap-13/er-coap-13.h"
 
-#include "los_memory.h"
-
 #ifdef LWM2M_WITH_LOGS
 #include <inttypes.h>
 #define LOG(STR) lwm2m_printf("[%s:%d] " STR "\r\n", __func__ , __LINE__)
@@ -242,17 +240,6 @@ typedef struct
 } bs_data_t;
 #endif
 
-static inline void * lwm2m_malloc(size_t s) 
-{  
-	void * mem = NULL;
-	mem = LOS_MemAlloc(m_aucSysMem0, s);
-	return mem;
-}
-static inline void lwm2m_free(void * p)
-{
-    if(NULL != p)
-        LOS_MemFree(m_aucSysMem0, p);
-}
 // defined in uri.c
 lwm2m_uri_t * uri_decode(char * altPath, multi_option_t *uriPath);
 int uri_getNumber(uint8_t * uriString, size_t uriLength);

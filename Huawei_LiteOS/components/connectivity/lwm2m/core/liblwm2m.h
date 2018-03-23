@@ -64,12 +64,13 @@ extern "C" {
 #include <stdbool.h>
 #include <time.h>
 
-//#undefine WITH_MBEDTLS
 
-#ifdef WITH_MBEDTLS
+#ifdef WITH_DTLS
 #include "ssl.h"
 #endif
+
 #include "er-coap-13.h"
+#include "atiny_adapter.h"
 
 
 
@@ -89,9 +90,9 @@ extern "C" {
 
 #ifndef LWM2M_MEMORY_TRACE
 // Allocate a block of size bytes of memory, returning a pointer to the beginning of the block.
-//void * lwm2m_malloc(size_t s);
+void * lwm2m_malloc(size_t s);
 // Deallocate a block of memory previously allocated by lwm2m_malloc() or lwm2m_strdup()
-//void lwm2m_free(void * p);
+void lwm2m_free(void * p);
 // Allocate a memory block, duplicate the string str in it and return a pointer to this new block.
 char * lwm2m_strdup(const char * str);
 #else
@@ -117,7 +118,7 @@ time_t lwm2m_gettime(void);
 #define LWM2M_WITH_LOGS
 #ifdef LWM2M_WITH_LOGS
 // Same usage as C89 printf()
-void lwm2m_printf(const char * format, ...);
+#define lwm2m_printf atiny_printf
 #endif
 
 // communication layer

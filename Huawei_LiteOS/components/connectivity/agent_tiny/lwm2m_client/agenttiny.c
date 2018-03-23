@@ -1,10 +1,10 @@
 #include "liblwm2m.h"
 #include "agenttiny.h"
 #include "object_comm.h"
-#ifdef WITH_SDTLS
+#ifdef WITH_DTLS
 #include "dtls_interface.h"
 #endif
-#include "dtls_conn.h"
+#include "connection.h"
 #include "internals.h"
 #include "agenttiny.h"
 #include "agent_list.h"
@@ -95,9 +95,9 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
         return ATINY_MALLOC_FAILED;
     } 
     
-    #if defined (WITH_TINYDTLS) || defined(WITH_MBEDTLS)
+ 
     pdata->lwm2mH = lwm2m_context;
-    #endif
+ 
 
     handle->lwm2m_context = lwm2m_context;
 
@@ -186,6 +186,7 @@ static int lwm2m_poll(lwm2m_context_t* contextP, uint32_t* timeout)
 		}
 		else
 		{
+		    output_buffer(stderr, buffer, numBytes, 0);
 			lwm2m_handle_packet(contextP, buffer, numBytes, connP);
 		}
 	    connP = connP->next;

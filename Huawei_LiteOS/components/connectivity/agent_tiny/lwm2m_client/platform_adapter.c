@@ -20,11 +20,23 @@
 #include <stdio.h>
 #include <stdarg.h>
 //#include <sys/time.h>
-#include "lwip/sockets.h"
 #include "internals.h"
-#include "los_sys.h"
+#include "atiny_adapter.h"
 
 #ifndef LWM2M_MEMORY_TRACE
+
+void* lwm2m_malloc(size_t s) 
+{  
+	void * mem = NULL;
+	mem = atiny_malloc(s);
+	return mem;
+}
+
+void lwm2m_free(void * p)
+{
+    if(NULL != p)
+        atiny_free(p);
+}
 
 
 char * lwm2m_strdup(const char * str)
@@ -48,16 +60,6 @@ int lwm2m_strncmp(const char * s1,
 
 time_t lwm2m_gettime(void)
 {
-    return (u32_t)(LOS_TickCountGet() / LOSCFG_BASE_CORE_TICK_PER_SECOND);
+    return (uint32_t)(atiny_gettime_ms()/1000);
 }
 
-void lwm2m_printf(const char * format, ...)
-{
-    va_list ap;
-
-    va_start(ap, format);
-
-    vfprintf(stderr, format, ap);
-
-    va_end(ap);
-}

@@ -10,13 +10,12 @@
       <TargetName>HuaweiLiteOS</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060528::V5.06 update 5 (build 528)::ARMCC</pCCUsed>
-      <uAC6>0</uAC6>
+      <pCCUsed>5060061::V5.06 update 1 (build 61)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F429IGTx</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F4xx_DFP.2.12.0</PackID>
+          <PackID>Keil.STM32F4xx_DFP.2.11.0</PackID>
           <PackURL>http://www.keil.com/pack</PackURL>
           <Cpu>IRAM(0x20000000,0x30000) IRAM2(0x10000000,0x10000) IROM(0x08000000,0x100000) CPUTYPE("Cortex-M4") FPU2 CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -329,9 +328,6 @@
             <v6LangP>1</v6LangP>
             <vShortEn>1</vShortEn>
             <vShortWch>1</vShortWch>
-            <v6Lto>0</v6Lto>
-            <v6WtE>0</v6WtE>
-            <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define>STM32F429_439xx,USE_STDPERIPH_DRIVER,USE_MBED_TLS,MBEDTLS_CONFIG_FILE=&lt;los_mbedtls_config.h&gt;,WITH_LWIP,LWM2M_LITTLE_ENDIAN,LWM2M_CLIENT_MODE,NDEBUG</Define>
@@ -349,7 +345,6 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -1501,11 +1496,6 @@
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\system_api.c</FilePath>
             </File>
             <File>
-              <FileName>dtls_conn.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\dtls_conn.c</FilePath>
-            </File>
-            <File>
               <FileName>commandline.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\commandline.c</FilePath>
@@ -1524,6 +1514,11 @@
               <FileName>atiny_rpt.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\atiny_rpt.c</FilePath>
+            </File>
+            <File>
+              <FileName>connection.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\connection.c</FilePath>
             </File>
           </Files>
         </Group>
