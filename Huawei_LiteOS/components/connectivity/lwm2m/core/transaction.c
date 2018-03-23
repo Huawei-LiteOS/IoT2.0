@@ -107,6 +107,7 @@ Contains code snippets which are:
 #include "internals.h"
 //#include "pdu.h"
 #include "commandline.h"
+#include "los_sys.h"
 
 
 /*
@@ -353,8 +354,8 @@ int transaction_send(lwm2m_context_t * contextP,
 
     LOG("Entering");
 
-    LOG_ARG("transaction_send process: ver %u, type %u, tkl %u, code %u.%.2u, mid %u, Content type: %d",
-            message->version, message->type, message->token_len, message->code >> 5, message->code & 0x1F, message->mid, message->content_type);
+    LOG_ARG("[%llu]transaction_send process: ver %u, type %u, tkl %u, code %u.%.2u, mid %u, Content type: %d",
+            LOS_TickCountGet(), message->version, message->type, message->token_len, message->code >> 5, message->code & 0x1F, message->mid, message->content_type);
     if (transacP->buffer == NULL)
     {
         transacP->buffer_len = coap_serialize_get_size(message);

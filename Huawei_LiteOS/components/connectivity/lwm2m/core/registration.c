@@ -1289,11 +1289,12 @@ void registration_step(lwm2m_context_t * contextP,
 #ifdef LWM2M_CLIENT_MODE
     lwm2m_server_t * targetP = contextP->serverList;
 
-    LOG_ARG("State: %s", STR_STATE(contextP->state));
+    LOG_ARG("contextP State: %s", STR_STATE(contextP->state));
 
     targetP = contextP->serverList;
     while (targetP != NULL)
     {
+        LOG_ARG("targetP Status: %s", STR_STATUS(targetP->status));
         switch (targetP->status)
         {
         case STATE_REGISTERED:
