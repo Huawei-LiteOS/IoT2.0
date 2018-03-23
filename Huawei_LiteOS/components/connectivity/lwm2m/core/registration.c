@@ -1299,7 +1299,7 @@ void registration_step(lwm2m_context_t * contextP,
         case STATE_REGISTERED:
         {
             time_t nextUpdate;
-            INT32  interval;
+            int32_t  interval;
 
             nextUpdate = targetP->lifetime;
             if (COAP_MAX_TRANSMIT_WAIT < nextUpdate)
@@ -1311,7 +1311,7 @@ void registration_step(lwm2m_context_t * contextP,
                 nextUpdate = nextUpdate >> 1;
             }
 
-            interval = (INT32)(targetP->registration + nextUpdate) - (INT32)currentTime;
+            interval = (int32_t)(targetP->registration + nextUpdate) - (int32_t)currentTime;
             if (0 >= interval)
             {
                 LOG("Updating registration");
