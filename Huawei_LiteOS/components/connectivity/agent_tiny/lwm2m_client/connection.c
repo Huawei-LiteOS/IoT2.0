@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "dtls_conn.h"
+#include "connection.h"
 #include "dtls_interface.h"
 #include "atiny_socket.h"
 #include "atiny_log.h"
@@ -38,7 +38,9 @@ connection_t * connection_create(connection_t * connList,
     char * uri;
     char * host;
     char * port;
+#ifdef WITH_DTLS
     int ret;
+#endif
     ATINY_LOG(LOG_INFO, "now come into connection_create!!!");
   
     security_instance_t * targetP = (security_instance_t *)LWM2M_LIST_FIND(securityObj->instanceList, instanceId);
@@ -154,7 +156,6 @@ void connection_free(connection_t * connP)
 {
 #ifdef WITH_DTLS    
     if (connP->dtls_flag == true) {
-        // no security
         dtls_ssl_destroy(connP->net_context);
     }
 	else
@@ -254,6 +255,7 @@ uint8_t lwm2m_buffer_send(void * sessionH,
                           void * userdata)
 {
     connection_t * connP = (connection_t*) sessionH;
+    int ret;
 
     if (connP == NULL)
     {
@@ -266,13 +268,15 @@ uint8_t lwm2m_buffer_send(void * sessionH,
 #ifdef WITH_DTLS
     if (connP->dtls_flag == true) {
         // no security
-	    return dtls_write(connP->net_context, buffer, length);
+        ret = dtls_write(connP->net_context, buffer, length);
     } 
     else 
 #endif        
     {
-        return atiny_net_send(connP->net_context, buffer, length);   
+        ret = atiny_net_send(connP->net_context, buffer, length);   
     }
+    if(ret >= 0) return COAP_NO_ERROR;
+    else return COAP_500_INTERNAL_SERVER_ERROR;
 }
 
 bool lwm2m_session_is_equal(void * session1, void * session2, void * userData)

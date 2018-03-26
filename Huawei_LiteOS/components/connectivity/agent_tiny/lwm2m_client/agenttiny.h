@@ -5,10 +5,11 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
-#include "liblwm2m.h"
 #include <stdio.h>
 #include "atiny_adapter.h"
-#include "agent_list.h"
+#include "liblwm2m.h"
+
+
 /***************************************************** 以下接口由用户实现，agent调用 ****************************************************************************************/
 
 /*****************************************************************************
@@ -19,7 +20,6 @@ extern "C" {
  Return      : 
  *****************************************************************************/
  void atiny_log(const char* fmt, ...);
-
 
 typedef enum
 {
@@ -104,6 +104,19 @@ typedef struct
     char* manufacturer;
     char* dev_type;
 } atiny_device_info_t;
+
+/*****************************************************************************
+ Function     : atiny_state_is_ready
+ Description  : 检查agent tiny是否注册成功
+ Input        : void *phandle
+ Output       : None
+ Return Value :
+            0 : agent tiny is not ready
+            1 : agent tiny is ready
+ Calls        :
+ Called By    :
+*****************************************************************************/
+int atiny_state_is_ready(void *phandle);
 
 /*****************************************************************************
  Function :    atiny_init  

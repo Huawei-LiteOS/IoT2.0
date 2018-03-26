@@ -85,6 +85,7 @@
 #define PRV_OFFSET_MAXLEN   7 //+HH:MM\0 at max
 #define PRV_TIMEZONE_MAXLEN 25
 #define PRV_TLV_BUFFER_SIZE 128
+#define MAX_STRING_LEN  64
 
 // Resource Id's:
 #define RES_O_MANUFACTURER          0
@@ -168,26 +169,26 @@ static int prv_check_time_offset(char * buffer,
 static uint8_t prv_set_value(lwm2m_data_t * dataP,
                              device_data_t * devDataP)
 {
+    char str[MAX_STRING_LEN+1] = {0};
     // a simple switch structure is used to respond at the specified resource asked
     switch (dataP->id)
     {
-    char str[30] = "";
     case RES_O_MANUFACTURER:
 		lwm2m_data_encode_string(devDataP->device_manufacutre, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_MODEL_NUMBER:
-		atiny_cmd_ioctl(ATINY_GET_MODEL_NUMBER, str, NULL);
+		atiny_cmd_ioctl(ATINY_GET_MODEL_NUMBER, str, MAX_STRING_LEN);
         lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_SERIAL_NUMBER:
-		atiny_cmd_ioctl(ATINY_GET_SERIAL_NUMBER, str, NULL);
+		atiny_cmd_ioctl(ATINY_GET_SERIAL_NUMBER, str, MAX_STRING_LEN);
         lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_FIRMWARE_VERSION:
-		atiny_cmd_ioctl(ATINY_GET_FIRMWARE_VER, str, strlen(str));
+		atiny_cmd_ioctl(ATINY_GET_FIRMWARE_VER, str, MAX_STRING_LEN);
         lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 
@@ -255,25 +256,28 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
     }
 
     case RES_O_BATTERY_LEVEL:
-		int battery_level;
+		{
+        int battery_level;
         atiny_cmd_ioctl(ATINY_GET_BATERRY_LEVEL, (char*)&battery_level, sizeof(int));
         lwm2m_data_encode_int(battery_level, dataP);
         return COAP_205_CONTENT;
+		}
 
     case RES_O_MEMORY_FREE:
-		int free_memory;
+		{
+        int free_memory;
         atiny_cmd_ioctl(ATINY_GET_MEMORY_FREE, (char*)&free_memory, sizeof(int));
         lwm2m_data_encode_int(free_memory, dataP);
         return COAP_205_CONTENT;
+		}
 
     case RES_M_ERROR_CODE:
     {
         lwm2m_data_t * subTlvP;
-
+        int err;
+		
         subTlvP = lwm2m_data_new(1);
-
-        subTlvP[0].id = 0;
-		int err;
+        subTlvP[0].id = 0;	
 		atiny_cmd_ioctl(ATINY_GET_DEV_ERR, (char*)&err, sizeof(int));
         lwm2m_data_encode_int(err, subTlvP);
 
@@ -298,7 +302,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
         return COAP_205_CONTENT;
       
     case RES_M_BINDING_MODES:
-		atiny_cmd_ioctl(ATINY_GET_BINDING_MODES, str, 10);
+		atiny_cmd_ioctl(ATINY_GET_BINDING_MODES, str, MAX_STRING_LEN);
         lwm2m_data_encode_string(str, dataP);
         return COAP_205_CONTENT;
 

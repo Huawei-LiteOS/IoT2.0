@@ -1,11 +1,12 @@
-#include "atiny_rpt.h"
-#include "agenttiny.h"
 #include <string.h>
 #include <stdio.h>
-#include "agent_list.h"
-#include "atiny_log.h"
 #include "liblwm2m.h"
 #include "internals.h"
+#include "atiny_rpt.h"
+#include "agenttiny.h"
+#include "agent_list.h"
+#include "atiny_log.h"
+#include "atiny_adapter.h"
 
 
 #define URI_FORMAT "uri(flag:0x%x,objId:%d,instId:%d,resId:%d)"
@@ -118,7 +119,7 @@ static void atiny_notify_stack_rpt_data_change(atiny_dl_list * node, void * cont
     atiny_rpt_list_t *rpt_list = (atiny_rpt_list_t *)node;
     if(!atiny_list_empty(&rpt_list->rpt_list))
     {
-        ATINY_LOG(LOG_DEBUG, "data change "URI_FORMAT, URI_LOG_PARAM(&rpt_list->uri));
+        ATINY_LOG(LOG_INFO, "data change cnt %d "URI_FORMAT,  rpt_list->rpt_node_cnt, URI_LOG_PARAM(&rpt_list->uri));
         lwm2m_resource_value_changed(context, &rpt_list->uri);
     }
 }
@@ -344,7 +345,7 @@ int atiny_clear_rpt_data(const lwm2m_uri_t *uri, int result)
        rpt_list->rpt_node_cnt = 0;
 	   ret = ATINY_OK;
     }while(0);
-
+    
     atiny_mutex_unlock(g_mutex);
 
     return ret;

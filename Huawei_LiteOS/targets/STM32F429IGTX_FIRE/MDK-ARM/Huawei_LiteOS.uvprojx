@@ -1533,11 +1533,6 @@
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\system_api.c</FilePath>
             </File>
             <File>
-              <FileName>dtls_conn.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\dtls_conn.c</FilePath>
-            </File>
-            <File>
               <FileName>commandline.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\commandline.c</FilePath>
@@ -1556,6 +1551,11 @@
               <FileName>atiny_rpt.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\atiny_rpt.c</FilePath>
+            </File>
+            <File>
+              <FileName>connection.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\connectivity\agent_tiny\lwm2m_client\connection.c</FilePath>
             </File>
           </Files>
         </Group>

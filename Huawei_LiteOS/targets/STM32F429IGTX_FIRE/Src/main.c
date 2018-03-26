@@ -118,9 +118,9 @@ VOID task1()
     ip_addr_set_zero_ip4(&netmask);
     ip_addr_set_zero_ip4(&gw);
 #else
-    IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
+    IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,8,IP_ADDR3);
     IP_ADDR4(&netmask,NETMASK_ADDR0,NETMASK_ADDR1,NETMASK_ADDR2,NETMASK_ADDR3);
-    IP_ADDR4(&gw,GW_ADDR0,GW_ADDR1,GW_ADDR2,GW_ADDR3);
+    IP_ADDR4(&gw,GW_ADDR0,GW_ADDR1,8,3);
 #endif
     netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, 
         &ethernetif_init, &tcpip_input);
