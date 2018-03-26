@@ -17,11 +17,11 @@ atiny_log_e atiny_get_log_level(void)
 
 
 const char *atiny_get_log_level_name(atiny_log_e log_level){
-    const char *aNames[] = {"LOG_FATAL",
-                            "LOG_ERR",
-                            "LOG_WARNING",
-                            "LOG_INFO",
-                            "LOG_DEBUG"};
+    const char *aNames[] = {"FATAL",
+                            "ERR",
+                            "WARNING",
+                            "INFO",
+                            "DEBUG"};
     if(log_level >= ARRAY_SIZE(aNames)){
         return "UNKOWN";
     }

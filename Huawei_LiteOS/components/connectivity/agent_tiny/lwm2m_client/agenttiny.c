@@ -8,7 +8,6 @@
 #include "connection.h"
 #include "internals.h"
 #include "agenttiny.h"
-#include "agent_list.h"
 #include "atiny_log.h"
 #include "atiny_rpt.h"
 
@@ -73,8 +72,6 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     lwm2m_context_t* lwm2m_context = NULL;
     char serverUri[SERVER_URI_MAX_LEN];
     int serverId = 123;
-    atiny_security_param_t *server_object_param = atiny_params->security_params;
-    //const char * localPort = server_object_param->server_port;
     char * epname = (char *)device_info->endpoint_name;
 
         /*init objects*/

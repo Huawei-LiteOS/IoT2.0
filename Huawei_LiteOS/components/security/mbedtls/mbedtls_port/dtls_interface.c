@@ -237,25 +237,15 @@ void dtls_ssl_destroy(mbedtls_ssl_context *ssl)
 
 int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len)
 {
-    int ret = 0;
-    do ret = mbedtls_ssl_write( ssl, (unsigned char *) buf, len );
-    while( ret == MBEDTLS_ERR_SSL_WANT_READ ||
-           ret == MBEDTLS_ERR_SSL_WANT_WRITE );
-    
-    return ret;
+    return mbedtls_ssl_write( ssl, (unsigned char *) buf, len );
 }
 
 int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len, uint32_t timeout)
 {
-    int ret = 0;
 
-    mbedtls_ssl_conf_read_timeout( ssl->conf, timeout );
+   mbedtls_ssl_conf_read_timeout( ssl->conf, timeout );
+   return mbedtls_ssl_read( ssl, buf, len );
 
-    do ret = mbedtls_ssl_read( ssl, buf, len );
-    while( ret == MBEDTLS_ERR_SSL_WANT_READ ||
-           ret == MBEDTLS_ERR_SSL_WANT_WRITE );
-    
-    return ret;
 }
 
 
