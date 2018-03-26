@@ -498,47 +498,6 @@ void lwm2m_resource_value_changed(lwm2m_context_t * contextP,
 
 }
 
-void lwm2m_resource_value_changed_ex(lwm2m_context_t * contextP,
-                                  lwm2m_uri_t * uriP)                                  
-{
-    lwm2m_observed_t * targetP;
-
-    LOG_URI(uriP);
-    targetP = contextP->observedList;
-    while (targetP != NULL)
-    {
-        if (targetP->uri.objectId == uriP->objectId)
-        {
-            if (!LWM2M_URI_IS_SET_INSTANCE(uriP)
-             || (targetP->uri.flag & LWM2M_URI_FLAG_INSTANCE_ID) == 0
-             || uriP->instanceId == targetP->uri.instanceId)
-            {
-                if ((LWM2M_URI_IS_SET_RESOURCE(uriP) && (targetP->uri.flag & LWM2M_URI_FLAG_RESOURCE_ID) != 0
-                    && uriP->resourceId == targetP->uri.resourceId) ||
-                    (!LWM2M_URI_IS_SET_RESOURCE(uriP)
-                 && ((targetP->uri.flag & LWM2M_URI_FLAG_RESOURCE_ID) == 0)))
-                {
-                    lwm2m_watcher_t * watcherP;
-
-                    LOG("Found an observation");
-                    LOG_URI(&(targetP->uri));
-
-                    for (watcherP = targetP->watcherList ; watcherP != NULL ; watcherP = watcherP->next)
-                    {
-                        if (watcherP->active == true)
-                        {
-                            LOG("Tagging a watcher");
-                            watcherP->update = true;
-                        }
-                    }
-                }
-            }
-        }
-        targetP = targetP->next;
-    }
-}
-
-
 
 void observe_app_step(lwm2m_context_t * contextP,
                   lwm2m_observed_t * targetP,
