@@ -78,7 +78,7 @@ void ack_callback(atiny_report_type_e type, int cookie, DATA_SEND_STATUS status)
 }
 
 int atiny_test(void){
-	uint8_t buf[16] = "gooooogle";
+	uint8_t buf[5] = {0,1,2,3,4};
     data_report_t report_data;
     int ret;
     report_data.buf = buf;
@@ -120,7 +120,7 @@ UINT32 creat_report_task()
 }
 
 char g_psk_value[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x93};
-char *g_endpoint_name = "11110003";
+char *g_endpoint_name = "xxxxxx";
 void lwm2m_main(int argc, char *argv[])
 {
      atiny_device_info_t *device_info = &g_device_info;
@@ -148,7 +148,7 @@ void lwm2m_main(int argc, char *argv[])
     security_param->psk = g_psk_value;
     security_param->psk_len = 16;
 #else
-    device_info->endpoint_name = "22220003";
+    device_info->endpoint_name = "xxxxxx";
     device_info->manufacturer = "test";
     
     //void* phandle;

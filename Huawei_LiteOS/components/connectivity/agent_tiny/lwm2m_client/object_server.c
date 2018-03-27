@@ -473,7 +473,15 @@ lwm2m_object_t * get_server_object(int serverId,
         memset(serverInstance, 0, sizeof(server_instance_t));
         serverInstance->instanceId = 0;
         serverInstance->shortServerId = serverId;
-        serverInstance->lifetime = lifetime;
+        if (lifetime <= 0)
+        {
+            serverInstance->lifetime = LWM2M_DEFAULT_LIFETIME;
+        }
+        else
+        {
+            serverInstance->lifetime = lifetime;
+        }
+
         serverInstance->storing = storing;
         memcpy (serverInstance->binding, binding, strlen(binding)+1);
         serverObj->instanceList = LWM2M_LIST_ADD(serverObj->instanceList, serverInstance);

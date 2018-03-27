@@ -136,30 +136,26 @@ mbedtls_ssl_context *dtls_ssl_new_with_psk(char *psk, unsigned psk_len, char *ps
     return ssl;
 
 exit_fail:
-    if(ctr_drbg)mbedtls_free(ctr_drbg);
-    if(entropy)mbedtls_free(entropy);
-    if(conf)mbedtls_free(conf);
-    if(ssl)mbedtls_free(ssl);
-    
+    dtls_ssl_destroy(ssl);
+
     return NULL;
 }
 
 int dtls_shakehand(mbedtls_ssl_context *ssl, const char *host, const char *port)
 {
     int ret;
-    mbedtls_net_context *server_fd;
-    mbedtls_timing_delay_context *timer;
+    mbedtls_net_context *server_fd = NULL;
+    mbedtls_timing_delay_context *timer = NULL;
 
-    server_fd = mbedtls_calloc(1,sizeof(mbedtls_net_context));
     timer     = mbedtls_calloc(1,sizeof(mbedtls_timing_delay_context));
-   
 
-    if(NULL == server_fd || NULL == timer)
+
+    if(NULL == timer)
     {
          ret = MBEDTLS_ERR_SSL_ALLOC_FAILED;
          goto exit_fail;
     }
-    
+
     /*
       * 1. Start the connection
       */
@@ -198,40 +194,78 @@ int dtls_shakehand(mbedtls_ssl_context *ssl, const char *host, const char *port)
     return 0;
 
 exit_fail:
-    
-    if(server_fd)mbedtls_free(server_fd);
-    if(timer)mbedtls_free(timer);
+
+    if(server_fd)
+    {
+        mbedtls_net_free(server_fd);
+        ssl->p_bio = NULL;
+    }
+    if(timer)
+    {
+        mbedtls_free(timer);
+        ssl->p_timer = NULL;
+    }
+
     return ret;
-    
+
 }
 void dtls_ssl_destroy(mbedtls_ssl_context *ssl)
 {
-    
-    mbedtls_ssl_config           *conf;
-    mbedtls_ctr_drbg_context     *ctr_drbg;
-    mbedtls_entropy_context      *entropy;
-    mbedtls_net_context          *server_fd;
-    mbedtls_timing_delay_context *timer;
-    
+
+    mbedtls_ssl_config           *conf = NULL;
+    mbedtls_ctr_drbg_context     *ctr_drbg = NULL;
+    mbedtls_entropy_context      *entropy = NULL;
+    mbedtls_net_context          *server_fd = NULL;
+    mbedtls_timing_delay_context *timer = NULL;
+
+    if (ssl == NULL)
+    {
+        return;
+    }
     conf       = ssl->conf;
-    ctr_drbg   = conf->p_rng;
-    entropy    =  ctr_drbg->p_entropy;
     server_fd  = (mbedtls_net_context *)ssl->p_bio;
     timer      = (mbedtls_timing_delay_context *)ssl->p_timer;
-        
-    mbedtls_net_free( server_fd );
-    mbedtls_ssl_free( ssl );
-    mbedtls_ssl_config_free( conf );
-    mbedtls_ctr_drbg_free( ctr_drbg );
-    mbedtls_entropy_free( entropy );
 
-	mbedtls_free(timer);
-	mbedtls_free(server_fd);
-	mbedtls_free(ctr_drbg);
-	mbedtls_free(entropy);
-	mbedtls_free(conf);
+    if (conf)
+    {
+        ctr_drbg   = conf->p_rng;
+        if (ctr_drbg)
+        {
+            entropy =  ctr_drbg->p_entropy;
+        }
+    }
+
+    if (server_fd)
+    {
+        mbedtls_net_free(server_fd);
+        mbedtls_free(server_fd);
+    }
+
+    if (conf)
+    {
+        mbedtls_ssl_config_free(conf);
+        mbedtls_free(conf);
+    }
+
+    if (ctr_drbg)
+    {
+        mbedtls_ctr_drbg_free(ctr_drbg);
+        mbedtls_free(ctr_drbg);
+    }
+
+    if (entropy)
+    {
+        mbedtls_entropy_free(entropy);
+        mbedtls_free(entropy);
+    }
+
+    if (timer)
+    {
+	    mbedtls_free(timer);
+    }
+
+    mbedtls_ssl_free(ssl);
 	mbedtls_free(ssl);
-
 }
 
 
