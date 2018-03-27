@@ -153,7 +153,7 @@ coap_serialize_int_option(unsigned int number, unsigned int current_number, uint
   if (0xFFFFFF00 & value) ++i;
   if (0xFFFFFFFF & value) ++i;
 
-  PRINTF("OPTION %u (delta %u, len %u)\n", number, number - current_number, i);
+  PRINTF("OPTION %u (delta %u, len %zu)\n", number, number - current_number, i);
 
   i = coap_set_option_header(number - current_number, i, buffer);
 
@@ -171,39 +171,41 @@ coap_serialize_array_option(unsigned int number, unsigned int current_number, ui
 {
   size_t i = 0;
 
-  if (split_char!='\0')
-  {
-    size_t j;
+  PRINTF("ARRAY type %u, len %zu, full [%.*s]\n", number, length,
+         (int)length, array);
+
+  if(split_char != '\0') {
+    int j;
     uint8_t *part_start = array;
     uint8_t *part_end = NULL;
     size_t temp_length;
 
-    for (j = 0; j<=length; ++j)
-    {
-      if (array[j]==split_char || j==length)
-      {
+    for(j = 0; j <= length + 1; ++j) {
+      PRINTF("STEP %u/%zu (%c)\n", j, length, array[j]);
+      if(array[j] == split_char || j == length) {
         part_end = array + j;
-        temp_length = part_end-part_start;
+        temp_length = part_end - part_start;
 
-        i += coap_set_option_header(number - current_number, temp_length, &buffer[i]);
+        i += coap_set_option_header(number - current_number, temp_length,
+                                    &buffer[i]);
         memcpy(&buffer[i], part_start, temp_length);
         i += temp_length;
 
-        PRINTF("OPTION type %u, delta %u, len %u, part [%.*s]\n", number, number - current_number, i, temp_length, part_start);
+        PRINTF("OPTION type %u, delta %u, len %zu, part [%.*s]\n", number,
+               number - current_number, i, (int)temp_length, part_start);
 
-        ++j; /* skip the splitter */
+        ++j;                    /* skip the splitter */
         current_number = number;
         part_start = array + j;
       }
-    } /* for */
-  }
-  else
-  {
+    }                           /* for */
+  } else {
     i += coap_set_option_header(number - current_number, length, &buffer[i]);
     memcpy(&buffer[i], array, length);
     i += length;
 
-    PRINTF("OPTION type %u, delta %u, len %u\n", number, number - current_number, length);
+    PRINTF("OPTION type %u, delta %u, len %zu\n", number,
+           number - current_number, length);
   }
 
   return i;
@@ -618,7 +620,6 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   unsigned int option_number = 0;
   unsigned int option_delta = 0;
   size_t option_length = 0;
-  unsigned int *x;
 
   /* Initialize packet */
   memset(coap_pkt, 0, sizeof(coap_packet_t));
@@ -772,7 +773,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
       case COAP_OPTION_URI_HOST:
         coap_pkt->uri_host = current_option;
         coap_pkt->uri_host_len = option_length;
-        PRINTF("Uri-Host [%.*s]\n", coap_pkt->uri_host_len, coap_pkt->uri_host);
+        PRINTF("Uri-Host [%.*s]\n", (int)coap_pkt->uri_host_len, coap_pkt->uri_host);
         break;
       case COAP_OPTION_URI_PORT:
         coap_pkt->uri_port = coap_parse_int_option(current_option, option_length);
@@ -782,13 +783,13 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
         /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
         // coap_merge_multi_option( (char **) &(coap_pkt->uri_path), &(coap_pkt->uri_path_len), current_option, option_length, 0);
         coap_add_multi_option( &(coap_pkt->uri_path), current_option, option_length, 1);
-        PRINTF("Uri-Path [%.*s]\n", option_length, current_option);
+        PRINTF("Uri-Path [%.*s]\n", (int)option_length, current_option);
         break;
       case COAP_OPTION_URI_QUERY:
         /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
         // coap_merge_multi_option( (char **) &(coap_pkt->uri_query), &(coap_pkt->uri_query_len), current_option, option_length, '&');
         coap_add_multi_option( &(coap_pkt->uri_query), current_option, option_length, 1);
-        PRINTF("Uri-Query [%.*s]\n", option_length, current_option);
+        PRINTF("Uri-Query [%.*s]\n", (int)option_length, current_option);
         break;
 
       case COAP_OPTION_LOCATION_PATH:
@@ -797,7 +798,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
       case COAP_OPTION_LOCATION_QUERY:
         /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
         coap_merge_multi_option( &(coap_pkt->location_query), &(coap_pkt->location_query_len), current_option, option_length, '&');
-        PRINTF("Location-Query [%.*s]\n", option_length, current_option);
+        PRINTF("Location-Query [%.*s]\n", (int)option_length, current_option);
         break;
 
       case COAP_OPTION_PROXY_URI:
@@ -805,14 +806,14 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
         coap_pkt->proxy_uri = current_option;
         coap_pkt->proxy_uri_len = option_length;
         /*TODO length > 270 not implemented (actually not required) */
-        PRINTF("Proxy-Uri NOT IMPLEMENTED [%.*s]\n", coap_pkt->proxy_uri_len, coap_pkt->proxy_uri);
+        PRINTF("Proxy-Uri NOT IMPLEMENTED [%.*s]\n", (int)coap_pkt->proxy_uri_len, coap_pkt->proxy_uri);
         coap_error_message = "This is a constrained server (Contiki)";
         return PROXYING_NOT_SUPPORTED_5_05;
 //        break;
 
       case COAP_OPTION_OBSERVE:
         coap_pkt->observe = coap_parse_int_option(current_option, option_length);
-        PRINTF("Observe [%lu]\n", coap_pkt->observe);
+        PRINTF("Observe [%lu]\n", (unsigned long)coap_pkt->observe);
         break;
       case COAP_OPTION_BLOCK2:
         coap_pkt->block2_num = coap_parse_int_option(current_option, option_length);
@@ -820,7 +821,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
         coap_pkt->block2_size = 16 << (coap_pkt->block2_num & 0x07);
         coap_pkt->block2_offset = (coap_pkt->block2_num & ~0x0000000F)<<(coap_pkt->block2_num & 0x07);
         coap_pkt->block2_num >>= 4;
-        PRINTF("Block2 [%lu%s (%u B/blk)]\n", coap_pkt->block2_num, coap_pkt->block2_more ? "+" : "", coap_pkt->block2_size);
+        PRINTF("Block2 [%lu%s (%u B/blk)]\n", (unsigned long)coap_pkt->block2_num, coap_pkt->block2_more ? "+" : "", coap_pkt->block2_size);
         break;
       case COAP_OPTION_BLOCK1:
         coap_pkt->block1_num = coap_parse_int_option(current_option, option_length);
@@ -828,11 +829,11 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
         coap_pkt->block1_size = 16 << (coap_pkt->block1_num & 0x07);
         coap_pkt->block1_offset = (coap_pkt->block1_num & ~0x0000000F)<<(coap_pkt->block1_num & 0x07);
         coap_pkt->block1_num >>= 4;
-        PRINTF("Block1 [%lu%s (%u B/blk)]\n", coap_pkt->block1_num, coap_pkt->block1_more ? "+" : "", coap_pkt->block1_size);
+        PRINTF("Block1 [%lu%s (%u B/blk)]\n", (unsigned long)coap_pkt->block1_num, coap_pkt->block1_more ? "+" : "", coap_pkt->block1_size);
         break;
       case COAP_OPTION_SIZE:
         coap_pkt->size = coap_parse_int_option(current_option, option_length);
-        PRINTF("Size [%lu]\n", coap_pkt->size);
+        PRINTF("Size [%lu]\n", (unsigned long)coap_pkt->size);
         break;
       default:
         PRINTF("unknown (%u)\n", option_number);
