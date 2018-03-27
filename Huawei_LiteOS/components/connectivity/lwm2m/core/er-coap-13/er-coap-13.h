@@ -53,6 +53,17 @@
 #define REST_MAX_CHUNK_SIZE     128
 #endif
 
+/* REST_MAX_CHUNK_SIZE can be different from 2^x so we need to get next lower 2^x for COAP_MAX_BLOCK_SIZE */
+#ifndef COAP_MAX_BLOCK_SIZE
+#define COAP_MAX_BLOCK_SIZE           (REST_MAX_CHUNK_SIZE < 32 ? 16 : \
+                                       (REST_MAX_CHUNK_SIZE < 64 ? 32 : \
+                                        (REST_MAX_CHUNK_SIZE < 128 ? 64 : \
+                                         (REST_MAX_CHUNK_SIZE < 256 ? 128 : \
+                                          (REST_MAX_CHUNK_SIZE < 512 ? 256 : \
+                                           (REST_MAX_CHUNK_SIZE < 1024 ? 512 : \
+                                            (REST_MAX_CHUNK_SIZE < 2048 ? 1024 : 2048)))))))
+#endif /* COAP_MAX_BLOCK_SIZE */
+
 #define COAP_DEFAULT_MAX_AGE                 60
 #define COAP_RESPONSE_TIMEOUT                4
 #define COAP_MAX_RETRANSMIT                  4
