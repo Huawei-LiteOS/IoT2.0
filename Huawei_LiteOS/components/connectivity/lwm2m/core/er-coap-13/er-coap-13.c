@@ -631,13 +631,18 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   /* parse header fields */
   coap_pkt->version = (COAP_HEADER_VERSION_MASK & coap_pkt->buffer[0])>>COAP_HEADER_VERSION_POSITION;
   coap_pkt->type = (coap_message_type_t)((COAP_HEADER_TYPE_MASK & coap_pkt->buffer[0])>>COAP_HEADER_TYPE_POSITION);
-  coap_pkt->token_len = MIN(COAP_TOKEN_LEN, (COAP_HEADER_TOKEN_LEN_MASK & coap_pkt->buffer[0])>>COAP_HEADER_TOKEN_LEN_POSITION);
+  coap_pkt->token_len = (COAP_HEADER_TOKEN_LEN_MASK & coap_pkt->buffer[0])>> COAP_HEADER_TOKEN_LEN_POSITION;
   coap_pkt->code = coap_pkt->buffer[1];
   coap_pkt->mid = coap_pkt->buffer[2]<<8 | coap_pkt->buffer[3];
 
   if (coap_pkt->version != 1)
   {
     coap_error_message = "CoAP version must be 1";
+    return BAD_REQUEST_4_00;
+  }
+
+  if(coap_pkt->token_len > COAP_TOKEN_LEN) {
+    coap_error_message = "Token Length must not be more than 8";
     return BAD_REQUEST_4_00;
   }
 
@@ -1341,7 +1346,7 @@ coap_get_header_size(void *packet, uint32_t *size)
   coap_packet_t *const coap_pkt = (coap_packet_t *) packet;
 
   if (!IS_OPTION(coap_pkt, COAP_OPTION_SIZE)) return 0;
-  
+
   *size = coap_pkt->size;
   return 1;
 }
