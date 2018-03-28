@@ -53,6 +53,17 @@
 #define REST_MAX_CHUNK_SIZE     128
 #endif
 
+/* REST_MAX_CHUNK_SIZE can be different from 2^x so we need to get next lower 2^x for COAP_MAX_BLOCK_SIZE */
+#ifndef COAP_MAX_BLOCK_SIZE
+#define COAP_MAX_BLOCK_SIZE           (REST_MAX_CHUNK_SIZE < 32 ? 16 : \
+                                       (REST_MAX_CHUNK_SIZE < 64 ? 32 : \
+                                        (REST_MAX_CHUNK_SIZE < 128 ? 64 : \
+                                         (REST_MAX_CHUNK_SIZE < 256 ? 128 : \
+                                          (REST_MAX_CHUNK_SIZE < 512 ? 256 : \
+                                           (REST_MAX_CHUNK_SIZE < 1024 ? 512 : \
+                                            (REST_MAX_CHUNK_SIZE < 2048 ? 1024 : 2048)))))))
+#endif /* COAP_MAX_BLOCK_SIZE */
+
 #define COAP_DEFAULT_MAX_AGE                 60
 #define COAP_RESPONSE_TIMEOUT                4
 #define COAP_MAX_RETRANSMIT                  4
@@ -266,13 +277,13 @@ typedef struct {
 /* Option format serialization*/
 #define COAP_SERIALIZE_INT_OPTION(number, field, text)  \
     if (IS_OPTION(coap_pkt, number)) { \
-      PRINTF(text" [%u]\n", coap_pkt->field); \
+      PRINTF(text" [%u]\n", (unsigned int)coap_pkt->field); \
       option += coap_serialize_int_option(number, current_number, option, coap_pkt->field); \
       current_number = number; \
     }
 #define COAP_SERIALIZE_BYTE_OPTION(number, field, text)      \
     if (IS_OPTION(coap_pkt, number)) { \
-      PRINTF(text" %u [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n", coap_pkt->field##_len, \
+      PRINTF(text" %u [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n", (unsigned int)coap_pkt->field##_len, \
         coap_pkt->field[0], \
         coap_pkt->field[1], \
         coap_pkt->field[2], \
@@ -287,7 +298,7 @@ typedef struct {
     }
 #define COAP_SERIALIZE_STRING_OPTION(number, field, splitter, text)      \
     if (IS_OPTION(coap_pkt, number)) { \
-      PRINTF(text" [%.*s]\n", coap_pkt->field##_len, coap_pkt->field); \
+      PRINTF(text" [%.*s]\n", (int)coap_pkt->field##_len, coap_pkt->field); \
       option += coap_serialize_array_option(number, current_number, option, (uint8_t *) coap_pkt->field, coap_pkt->field##_len, splitter); \
       current_number = number; \
     }
@@ -311,10 +322,10 @@ typedef struct {
     if (IS_OPTION(coap_pkt, number)) \
     { \
       uint32_t block = coap_pkt->field##_num << 4; \
-      PRINTF(text" [%lu%s (%u B/blk)]\n", coap_pkt->field##_num, coap_pkt->field##_more ? "+" : "", coap_pkt->field##_size); \
+      PRINTF(text" [%lu%s (%u B/blk)]\n", (unsigned long)coap_pkt->field##_num, coap_pkt->field##_more ? "+" : "", coap_pkt->field##_size); \
       if (coap_pkt->field##_more) block |= 0x8; \
       block |= 0xF & coap_log_2(coap_pkt->field##_size/16); \
-      PRINTF(text" encoded: 0x%lX\n", block); \
+      PRINTF(text" encoded: 0x%lX\n", (unsigned long)block); \
       option += coap_serialize_int_option(number, current_number, option, block); \
       current_number = number; \
     }

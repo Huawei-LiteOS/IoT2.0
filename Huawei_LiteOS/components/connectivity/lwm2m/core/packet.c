@@ -112,7 +112,7 @@ static uint8_t handle_request(lwm2m_context_t * contextP,
     uint8_t result = COAP_IGNORE;
 
     LOG("Entering");
-	
+
 #ifdef LWM2M_CLIENT_MODE
     uriP = uri_decode(contextP->altPath, message->uri_path);
 #else
@@ -216,7 +216,7 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
         if (message->code >= COAP_GET && message->code <= COAP_DELETE)
         {
             uint32_t block_num = 0;
-            uint16_t block_size = REST_MAX_CHUNK_SIZE;
+            uint16_t block_size = COAP_MAX_BLOCK_SIZE;
             uint32_t block_offset = 0;
             int64_t new_offset = 0;
 
@@ -241,8 +241,8 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
             /* get offset for blockwise transfers */
             if (coap_get_header_block2(message, &block_num, NULL, &block_size, &block_offset))
             {
-                LOG_ARG("Blockwise: block request %u (%u/%u) @ %u bytes", block_num, block_size, REST_MAX_CHUNK_SIZE, block_offset);
-                block_size = MIN(block_size, REST_MAX_CHUNK_SIZE);
+                LOG_ARG("Blockwise: block request %u (%u/%u) @ %u bytes", block_num, block_size, COAP_MAX_BLOCK_SIZE, block_offset);
+                block_size = MIN(block_size, COAP_MAX_BLOCK_SIZE);
                 new_offset = block_offset;
             }
 
@@ -329,10 +329,10 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
                 }
                 else if (new_offset!=0)
                 {
-                    LOG_ARG("Blockwise: no block option for blockwise resource, using block size %u", REST_MAX_CHUNK_SIZE);
+                    LOG_ARG("Blockwise: no block option for blockwise resource, using block size %u", COAP_MAX_BLOCK_SIZE);
 
-                    coap_set_header_block2(response, 0, new_offset!=-1, REST_MAX_CHUNK_SIZE);
-                    coap_set_payload(response, response->payload, MIN(response->payload_len, REST_MAX_CHUNK_SIZE));
+                    coap_set_header_block2(response, 0, new_offset!=-1, COAP_MAX_BLOCK_SIZE);
+                    coap_set_payload(response, response->payload, MIN(response->payload_len, COAP_MAX_BLOCK_SIZE));
                 } /* if (blockwise request) */
 
                 coap_error_code = message_send(contextP, response, fromSessionH);
