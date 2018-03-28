@@ -20,15 +20,16 @@ CFLAGS += -DLWIP_TIMEVAL_PRIVATE=0 -DBYTE_ORDER
 #compile dynamic library of agenttiny.c
 
 SRC:= $(wildcard *.c, $(HW_LITEOSDIR)/components/connectivity/agent_tiny/lwm2m_client/*.c)
+SRC+= $(HW_LITEOSDIR)/components/connectivity/agent_tiny/examples/agent_tiny_example.c
 SRC+= $(wildcard $(HW_LITEOSDIR)/components/connectivity/lwm2m/core/*.c)
 SRC+= $(wildcard $(HW_LITEOSDIR)/components/connectivity/lwm2m/core/er-coap-13/*.c)
-SRC+= $(HW_LITEOSDIR)/components/connectivity/agent_tiny/osadapter/atiny_adapter.c 
-SRC+= $(HW_LITEOSDIR)/components/connectivity/agent_tiny/osadapter/atiny_socket.c 
-SRC+= $(wildcard $(HW_LITEOSDIR)/tests/*.c) \
+SRC+= $(wildcard $(HW_LITEOSDIR)/components/connectivity/agent_tiny/osadapter/*.c) 
+SRC+= $(wildcard $(HW_LITEOSDIR)/tests/*.c)
 
 
 LIB_OBJ:=$(patsubst %.c, %.o, $(SRC))
 INCLUDES:= -I$(HW_LITEOSDIR)/components/connectivity/lwm2m/core/ \
+    -I$(HW_LITEOSDIR)/components/connectivity/lwm2m/core/er-coap-13 \
 	-I$(HW_LITEOSDIR)/components/connectivity/agent_tiny/osadapter/ \
 	-I$(HW_LITEOSDIR)/components/connectivity/agent_tiny/comm/include/ \
 	-I$(HW_LITEOSDIR)/kernel/include/ \
@@ -47,9 +48,10 @@ INCLUDES:= -I$(HW_LITEOSDIR)/components/connectivity/lwm2m/core/ \
 	-I$(HW_LITEOSDIR)/components/net/lwip_port/ \
 	-I$(HW_LITEOSDIR)/drivers/boards/STM32F429IGTX_FIRE/usart/ \
 	-I$(HW_LITEOSDIR)/components/security/mbedtls/mbedtls-2.6.0/include/ \
+    -I$(HW_LITEOSDIR)/components/connectivity/agent_tiny/examples/ \
 
 
-CPP_OBJ:=test_agenttiny.o 
+CPP_OBJ:=main.o test_agenttiny.o 
 C_OBJ:=adapter_layer.o 
 all:lib $(BIN)
 lib:$(LIB)

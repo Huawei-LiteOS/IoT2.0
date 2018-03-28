@@ -4,13 +4,13 @@
 #include <memory>
 #include "test_agenttiny.h"
 
-void myTest::test_func1(){
+void TestAgenttiny::test_func1(){
     atiny_param_t * p_atiny_param = NULL;
     void * handle = NULL;
 
     TEST_ASSERT_MSG((atiny_init(p_atiny_param, &handle) == ATINY_ARG_INVALID), "Test atiny_init(NULL, NULL) Failed");
   };
-void myTest::test_func2(){
+void TestAgenttiny::test_func2(){
   atiny_param_t * atiny_param = &this->prv_atiny_params;
   void * handle = this->prv_handle;
   atiny_security_param_t *security_param = NULL;
@@ -37,7 +37,7 @@ void myTest::test_func2(){
     TEST_ASSERT(0 == memcmp(((handle_data_t*)this->prv_handle)->atiny_params.security_params[0].server_port, "5684", strlen("5684")));
   };
 
-void myTest::test_func3(){
+void TestAgenttiny::test_func3(){
         atiny_log_e log_level = atiny_get_log_level();
         atiny_set_log_level(LOG_FATAL);
         TEST_ASSERT((atiny_get_log_level() == LOG_FATAL));
@@ -48,7 +48,7 @@ void myTest::test_func3(){
         
     }
 
-void myTest::test_func4(){
+void TestAgenttiny::test_func4(){
       atiny_device_info_t dev_info;
       
       dev_info.endpoint_name = "test_epname";
@@ -62,7 +62,7 @@ void myTest::test_func4(){
       //TEST_ASSERT((0));
     }
 
-void myTest::test_func5(){
+void TestAgenttiny::test_func5(){
        void * handle = NULL;
        stubInfo si;
        //       setStub((void*)atiny_init, (void*)stub_atiny_init, &si);
@@ -70,15 +70,15 @@ void myTest::test_func5(){
        cleanStub(&si);
     }
 
-myTest::myTest(){
-    TEST_ADD(myTest::test_func1);
-    TEST_ADD(myTest::test_func2);
-    TEST_ADD(myTest::test_func3);
-    TEST_ADD(myTest::test_func4);
+TestAgenttiny::TestAgenttiny(){
+    TEST_ADD(TestAgenttiny::test_func1);
+    TEST_ADD(TestAgenttiny::test_func2);
+    TEST_ADD(TestAgenttiny::test_func3);
+    TEST_ADD(TestAgenttiny::test_func4);
   }
 
 //protected:
-void myTest::setup(){
+void TestAgenttiny::setup(){
     atiny_param_t* atiny_params = &(this->prv_atiny_params);
  
     atiny_params->server_params.binding = "UQS";
@@ -92,11 +92,12 @@ void myTest::setup(){
     TEST_ASSERT((atiny_params != NULL));
   }
 
-void myTest::tear_down(){
+void TestAgenttiny::tear_down(){
     std::cout<<"in teardown\n";
     atiny_deinit(this->prv_handle);
   }
 
+#if 0
 int main()
 {
   Test::Suite ts;
@@ -112,3 +113,4 @@ int main()
 
 }
 
+#endif

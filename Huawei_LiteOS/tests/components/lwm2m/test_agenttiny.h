@@ -29,7 +29,7 @@ typedef struct
 }handle_data_t;
 
 
-class myTest:public Test::Suite {
+class TestAgenttiny:public Test::Suite {
   atiny_param_t prv_atiny_params;
   void* prv_handle = NULL;
 
@@ -44,6 +44,6 @@ class myTest:public Test::Suite {
   void test_func4();
   void test_func5();
 
-  myTest();
+  TestAgenttiny();
 };
 #endif

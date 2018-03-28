@@ -6,7 +6,7 @@ extern "C" {
 #include <stdlib.h>
 #include "los_typedef.h"
 #include "agenttiny.h"
-#include "dtls_conn.h"
+#include "connection.h"
 #include "stm32f4xx.h"
 #include "dtls_interface.h"
 
