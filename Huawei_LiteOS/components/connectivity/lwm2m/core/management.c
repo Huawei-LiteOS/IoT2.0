@@ -16,7 +16,7 @@
  *    Toby Jaffey - Please refer to git log
  *    Bosch Software Innovations GmbH - Please refer to git log
  *    Pascal Rieux - Please refer to git log
- *    
+ *
  *******************************************************************************/
 /*
  Copyright (c) 2013, 2014 Intel Corporation
@@ -167,25 +167,18 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
 {
     uint8_t result;
     lwm2m_media_type_t format;
-    uint8_t res_data[] = {0,1};
 
     LOG_ARG("Code: %02X, server status: %s", message->code, STR_STATUS(serverP->status));
     LOG_URI(uriP);
-	
+
     if (IS_OPTION(message, COAP_OPTION_CONTENT_TYPE))
     {
         format = utils_convertMediaType(message->content_type);
     }
     else
     {
-        if (uriP->objectId == 19) 
-        {    
-            format = LWM2M_CONTENT_OPAQUE;
-        }
-        else
-        {
-            format =LWM2M_CONTENT_TLV;
-        }
+	    format = (dm_isUriOpaqueHandle(uriP) ? LWM2M_CONTENT_OPAQUE : LWM2M_CONTENT_TLV);
+
     }
 
     if (uriP->objectId == LWM2M_SECURITY_OBJECT_ID)
@@ -271,7 +264,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
                 result = object_read(contextP, uriP, &format, &buffer, &length);
             }
 
-            
+
             if (COAP_205_CONTENT == result)
             {
                 coap_set_header_content_type(response, format);
@@ -319,11 +312,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             {
                 result = object_execute(contextP, uriP, message->payload, message->payload_len);
             }
-            /*华为云平台，对于objectid=19，payload必须携带00 01*/
-            if(result == NO_ERROR && uriP->objectId == 19) 
-            {
-                 coap_set_payload(response, res_data, 2);
-            }
+
         }
         break;
 
@@ -345,10 +334,6 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
             else if (LWM2M_URI_IS_SET_INSTANCE(uriP))
             {
                 result = object_write(contextP, uriP, format, message->payload, message->payload_len);
-                if(result == COAP_204_CHANGED && uriP->objectId == 19) 
-                {
-                     coap_set_payload(response, res_data, 2);
-                }
             }
             else
             {

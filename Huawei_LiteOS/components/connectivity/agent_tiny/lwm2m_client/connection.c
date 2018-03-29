@@ -126,6 +126,7 @@ connection_t * connection_create(connection_t * connList,
 	    if(ret != 0)
 	    {
 	        ATINY_LOG(LOG_INFO, "ret is %d in connection_create",ret);
+            dtls_ssl_destroy((mbedtls_ssl_context*)connP->net_context);
 	        lwm2m_free(connP);
 	        return NULL;
 	    }

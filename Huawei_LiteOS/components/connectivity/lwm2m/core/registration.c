@@ -192,7 +192,7 @@ static void prv_handleRegistrationReply(lwm2m_transaction_t * transacP,
 {
     coap_packet_t * packet = (coap_packet_t *)message;
     lwm2m_server_t * targetP = (lwm2m_server_t *)(transacP->userData);
-	
+
     LOG("come into  prv_handleRegistrationReply!!");
     if (targetP->status == STATE_REG_PENDING)
     {
@@ -299,7 +299,7 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
 
     lwm2m_free(payload);
     lwm2m_free(query);
-    
+
     server->status = STATE_REG_PENDING;
 
     return COAP_NO_ERROR;
@@ -347,9 +347,19 @@ static int prv_updateRegistration(lwm2m_context_t * contextP,
     if (withObjects == true)
     {
         payload_length = object_getRegisterPayloadBufferLength(contextP);
-        if(payload_length == 0) return COAP_500_INTERNAL_SERVER_ERROR;
+        if(payload_length == 0)
+        {
+            transaction_free(transaction);
+            return COAP_500_INTERNAL_SERVER_ERROR;
+        }
+
         payload = lwm2m_malloc(payload_length);
-        if(!payload) return COAP_500_INTERNAL_SERVER_ERROR;
+        if(!payload)
+        {
+            transaction_free(transaction);
+            return COAP_500_INTERNAL_SERVER_ERROR;
+        }
+
         payload_length = object_getRegisterPayload(contextP, payload, payload_length);
         if(payload_length == 0)
         {
@@ -848,7 +858,7 @@ static int prv_getId(uint8_t * data,
     {
         data += 1;
         length -= 2;
-    } 
+    }
     else
     {
         return 0;
@@ -1317,17 +1327,6 @@ void registration_step(lwm2m_context_t * contextP,
             if (0 >= interval)
             {
                 LOG("Updating registration");
-                /*test!!!*/
-                #if 1
-                lwm2m_uri_t    uri;
-                uri.flag       = 6;
-                uri.objectId   = 3;
-                uri.instanceId = 0;
-                uri.resourceId = 0;
-                extern void lwm2m_resource_value_changed_ex(lwm2m_context_t * contextP,
-                    lwm2m_uri_t * uriP);
-                lwm2m_resource_value_changed_ex(contextP,&uri);
-                #endif
                 prv_updateRegistration(contextP, targetP, false);
             }
             else if (interval < *timeoutP)
