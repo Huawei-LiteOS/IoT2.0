@@ -133,12 +133,12 @@ UINT64 LOS_TickCountGet (VOID)
 {
   return 0;
 }
-
+/*
 int atiny_cmd_ioctl(atiny_cmd_e cmd, char* arg, int len)
 {
   return 0;
 }
-
+*/
 #ifdef __cplusplus
 }
 #endif

@@ -9,7 +9,7 @@ void TestAgenttiny::test_func1(){
     void * handle = NULL;
 
     TEST_ASSERT_MSG((atiny_init(p_atiny_param, &handle) == ATINY_ARG_INVALID), "Test atiny_init(NULL, NULL) Failed");
-  };
+  }
 void TestAgenttiny::test_func2(){
   atiny_param_t * atiny_param = &this->prv_atiny_params;
   void * handle = this->prv_handle;
@@ -35,7 +35,7 @@ void TestAgenttiny::test_func2(){
     TEST_ASSERT(((handle_data_t*)this->prv_handle)->atiny_params.security_params[0].is_bootstrap == FALSE);
     TEST_ASSERT(0 == memcmp(((handle_data_t*)this->prv_handle)->atiny_params.security_params[0].server_ip, "139.159.209.89", strlen("139.159.209.89")));
     TEST_ASSERT(0 == memcmp(((handle_data_t*)this->prv_handle)->atiny_params.security_params[0].server_port, "5684", strlen("5684")));
-  };
+  }
 
 void TestAgenttiny::test_func3(){
         atiny_log_e log_level = atiny_get_log_level();

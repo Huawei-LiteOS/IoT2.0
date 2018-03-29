@@ -35,7 +35,7 @@ int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len, uint32_t
 int atiny_net_send( void *ctx, const unsigned char *buf, size_t len );
 int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len);
 UINT64 LOS_TickCountGet (VOID);
-int atiny_cmd_ioctl(atiny_cmd_e cmd, char* arg, int len);
+//int atiny_cmd_ioctl(atiny_cmd_e cmd, char* arg, int len);
 
 #ifdef __cplusplus
 }
