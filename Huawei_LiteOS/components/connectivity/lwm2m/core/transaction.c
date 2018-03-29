@@ -123,7 +123,7 @@ static int prv_checkFinished(lwm2m_transaction_t * transacP,
     const uint8_t* token;
     coap_packet_t * transactionMessage = transacP->message;
 
-    if (COAP_DELETE < transactionMessage->code)
+    if (IS_RESPONSE(transactionMessage->code))
     {
         // response
         return transacP->ack_received ? 1 : 0;
@@ -131,13 +131,25 @@ static int prv_checkFinished(lwm2m_transaction_t * transacP,
     if (!IS_OPTION(transactionMessage, COAP_OPTION_TOKEN))
     {
         // request without token
-        return transacP->ack_received ? 1 : 0;
+        if (transacP->ack_received)
+        {
+            transacP->response_timeout = 0;
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     len = coap_get_header_token(receivedMessage, &token);
     if (transactionMessage->token_len == len)
     {
-        if (memcmp(transactionMessage->token, token, len)==0) return 1;
+        if (memcmp(transactionMessage->token, token, len) == 0) 
+        {
+            transacP->response_timeout = 0;
+            return 1;
+        }
     }
     LOG_ARG("transactionMessage->token_len is %d, len is %d\n",transactionMessage->token_len,len);
     int i = 0;
@@ -316,11 +328,11 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
                         message_send(contextP, response, fromSessionH);
                     }
                 
-	                if ((COAP_401_UNAUTHORIZED == message->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
-    	            {
-        	        transacP->ack_received = false;
-            	        transacP->retrans_time += COAP_RESPONSE_TIMEOUT;
-						LOG("timeout in transaction_handleResponse\n");
+                    if ((COAP_401_UNAUTHORIZED == message->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
+                    {
+                        transacP->ack_received = false;
+                        transacP->retrans_time += COAP_RESPONSE_TIMEOUT;
+                        LOG("timeout in transaction_handleResponse\n");
                         return true;
                     }
                 }       
@@ -333,21 +345,8 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
             }
             // if we found our guy, exit
             if (found)
-            {
-                time_t tv_sec = lwm2m_gettime();
-                if (tv_sec)
-                {
-                    transacP->retrans_time = tv_sec;
-                }
-                if (transacP->response_timeout)
-                {
-                    transacP->retrans_time += transacP->response_timeout;
-                }
-                else
-                {
-                    transacP->retrans_time += COAP_RESPONSE_TIMEOUT * transacP->retrans_counter;
-                }
-				LOG_ARG("only true25,fromSessionH is %p, transacP->peerH is %p\n",fromSessionH,transacP->peerH);
+            {                              
+                LOG_ARG("only true25,fromSessionH is %p, transacP->peerH is %p\n",fromSessionH,transacP->peerH);
                 return true;
             }
         }
@@ -413,6 +412,10 @@ int transaction_send(lwm2m_context_t * contextP,
             {
                 transacP->retrans_time = tv_sec + COAP_RESPONSE_TIMEOUT;
                 transacP->retrans_counter = 1;
+                if (IS_REQUEST(transacP->message->code))
+                {
+                    transacP->response_timeout = tv_sec + COAP_MAX_TRANSMIT_WAIT;
+                }
                 timeout = 0;
             }
             else
@@ -441,16 +444,29 @@ int transaction_send(lwm2m_context_t * contextP,
 
     if (transacP->ack_received || maxRetriesReached)
     {
-        if (transacP->callback)
+        if (IS_REQUEST(transacP->message->code))
         {
-            transacP->callback(transacP, NULL);
+            if (lwm2m_gettime() >= transacP->response_timeout)
+            {
+                LOG_ARG("transaction response_timeout:%d ", transacP->response_timeout);
+                goto remove;
+            }
         }
-        transaction_remove(contextP, transacP);
-        LOG_ARG("remove, ACK:%d, timeout: %d", transacP->ack_received, maxRetriesReached);
-        return -1;
+        else
+        {
+            goto remove;
+        }       
     }
-
     return 0;
+remove:
+    if (transacP->callback)
+    {
+        transacP->callback(transacP, NULL);
+    }
+    transaction_remove(contextP, transacP);
+    LOG_ARG("remove, ACK:%d, timeout: %d", transacP->ack_received, maxRetriesReached);
+    return -1;
+
 }
 
 void transaction_step(lwm2m_context_t * contextP,

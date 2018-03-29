@@ -213,7 +213,7 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
         LOG_ARG("Parsed: ver %u, type %u, tkl %u, code %u.%.2u, mid %u, Content type: %d",
                 message->version, message->type, message->token_len, message->code >> 5, message->code & 0x1F, message->mid, message->content_type);
         //LOG_ARG("Payload: %.*s", message->payload_len, message->payload);   //%s can not used for binary data.
-        if (message->code >= COAP_GET && message->code <= COAP_DELETE)
+        if (IS_REQUEST(message->code))
         {
             uint32_t block_num = 0;
             uint16_t block_size = COAP_MAX_BLOCK_SIZE;
