@@ -11,7 +11,7 @@
 /* testcase for read 4/0 in object_connectivity_moni.c 
 */
 
-  void TestObjectConnectivityMoni::test_func1(){
+  void TestObjectConnectivityMoni::test_prv_read(){
       int result;
     lwm2m_uri_t uri = {.flag = 0x07, .objectId = 4, .instanceId = 0, .resourceId = 0};
     int len = 1; 
@@ -77,7 +77,7 @@
 
 
   TestObjectConnectivityMoni::TestObjectConnectivityMoni(){
-    TEST_ADD(TestObjectConnectivityMoni::test_func1);
+    TEST_ADD(TestObjectConnectivityMoni::test_prv_read);
   }
 
   void TestObjectConnectivityMoni::setup(){

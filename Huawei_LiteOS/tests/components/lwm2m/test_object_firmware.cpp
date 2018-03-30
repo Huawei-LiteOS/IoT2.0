@@ -13,7 +13,7 @@
 
 
 
-  void TestObjectFirmware::test_func1(){
+  void TestObjectFirmware::test_prv_firmware_read(){
       int result;
       lwm2m_uri_t uri = {.flag = 0x07, .objectId = 5, .instanceId = 0, .resourceId = 0};
       int len = 1; 
@@ -49,7 +49,7 @@
 	  TEST_ASSERT_EQUALS_MSG(result, COAP_404_NOT_FOUND, result);
 	
   }
-  void TestObjectFirmware::test_func2(){
+  void TestObjectFirmware::test_prv_firmware_execute(){
 	  int result;
       lwm2m_uri_t uri = {.flag = 0x07, .objectId = 5, .instanceId = 0, .resourceId = 0};
       int len = 0; 
@@ -75,8 +75,8 @@
 
 
   TestObjectFirmware::TestObjectFirmware(){
-    TEST_ADD(TestObjectFirmware::test_func1);
-    TEST_ADD(TestObjectFirmware::test_func2);
+    TEST_ADD(TestObjectFirmware::test_prv_firmware_read);
+    TEST_ADD(TestObjectFirmware::test_prv_firmware_execute);
   }
 
   void TestObjectFirmware::setup(){

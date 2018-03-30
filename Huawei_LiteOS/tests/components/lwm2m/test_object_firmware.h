@@ -16,8 +16,8 @@ class TestObjectFirmware:public Test::Suite {
   void setup();
 
  public:
-  void test_func1();
-  void test_func2();
+  void test_prv_firmware_read();
+  void test_prv_firmware_execute();
 
 
   TestObjectFirmware();
