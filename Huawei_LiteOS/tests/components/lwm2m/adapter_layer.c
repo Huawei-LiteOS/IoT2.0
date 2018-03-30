@@ -4,6 +4,9 @@
 #include <semaphore.h>
 
 #define OS_SYS_MEM_SIZE                                     0x0024000          // size 200k
+//for lwip defined
+#define F_GETFL 3
+
 
 UINT32  g_vuwIntCount = 0;
 UINT64      g_ullTickCount;
@@ -15,7 +18,7 @@ extern "C" {
 
 void atiny_log(const char* fmt, ...)
 {
-  printf(fmt);
+  printf("%s",fmt);
   return;
 }
 
@@ -62,32 +65,22 @@ uint32_t RNG_GetRandomNumber(void)
 {
     return 0;
 }
+
 UINT32 LOS_BinarySemCreate (UINT16 usCount, UINT32 *puwSemHandle)
 {
-  sem_t  *sem = (sem_t *)puwSemHandle;
-  printf("in %s\n", __func__);
-  UINT32 ret = -1;//sem_init(&sem, 0, usCount);
-  printf("ret = %d in %s, sem.len = %d\n", ret, __func__, sem);
-  return ret;
-  //   return 0;
+    return -1;
 }
 UINT32 LOS_SemDelete(UINT32 uwSemHandle)
 {
-  //sem_destroy(uwSemHandle);
     return -1;
 }
 UINT32 LOS_SemPend(UINT32 uwSemHandle, UINT32 uwTimeout)
 {
-  struct timespec ts;
-
-  ts.tv_sec = uwTimeout;
-  ts.tv_nsec = 0;
-  //sem_timedwait(uwSemHandle, &ts);
     return -1;
 }
 UINT32 LOS_SemPost(UINT32 uwSemHandle)
 {
-    return 0;
+    return -1;
 }
 
 mbedtls_ssl_context *dtls_ssl_new_with_psk(char *psk, unsigned psk_len, char *psk_identity)
@@ -98,32 +91,14 @@ int dtls_shakehand(mbedtls_ssl_context *ssl, const char *host, const char *port)
 {
   return 0;
 }
-void* atiny_net_connect( const char *host, const char *port, int proto )
-{
-  return NULL;
-}
-void atiny_net_close( void *ctx )
-{
-  return ;
-}
 void dtls_ssl_destroy(mbedtls_ssl_context *ssl)
 {
   return;
-}
-int atiny_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
-                      uint32_t timeout )
-{
-  return 0;
 }
 int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len, uint32_t timeout)
 {
   return 0;
 }
-int atiny_net_send( void *ctx, const unsigned char *buf, size_t len )
-{
-  return 0;
-}
-
 int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len)
 {
   return 0;
@@ -133,11 +108,32 @@ UINT64 LOS_TickCountGet (VOID)
 {
   return 0;
 }
-
-int atiny_cmd_ioctl(atiny_cmd_e cmd, char* arg, int len)
+int lwip_fcntl(int s, int cmd, int val)
 {
-  return 0;
+  /*
+   * Never return 'WOULD BLOCK' on a non-blocking socket
+   */
+  int ret = -1;
+  switch (cmd)
+    {
+    case F_GETFL:
+      {
+	ret = 0;
+      }
+      break;
+    default:
+      break;
+    }
+  return ret;
 }
+
+int  lwip_shutdown(int s, int how)
+{
+  return -1;
+}
+  //  int lwip_close(int s){
+  //return -1;
+  //}
 
 #ifdef __cplusplus
 }

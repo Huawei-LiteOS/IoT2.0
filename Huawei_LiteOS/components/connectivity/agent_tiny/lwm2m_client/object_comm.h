@@ -34,6 +34,10 @@
 #include "connection.h"
 #include "agent_list.h"
 
+ #ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int g_reboot;
 
 typedef struct
@@ -162,4 +166,7 @@ void copy_security_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSr
 
 int prv_refreshServerList(lwm2m_context_t * contextP);
 void output_buffer(FILE * stream, uint8_t * buffer, int length, int indent);
+#ifdef __cplusplus
+}
+#endif
 #endif /* LWM2MCLIENT_H_ */

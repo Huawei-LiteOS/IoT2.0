@@ -110,8 +110,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
 
     case RES_M_RADIO_SIGNAL_STRENGTH: //s-int
     {
-        int signalstrength = 0;
-        atiny_cmd_ioctl(ATINY_GET_SIGNAL_STRENGTH, (char*)&signalstrength, sizeof(int));
+        atiny_cmd_ioctl(ATINY_GET_SIGNAL_STRENGTH, (char*)&(connDataP->signalStrength), sizeof(int));
         lwm2m_data_encode_int(connDataP->signalStrength, dataP);
         return COAP_205_CONTENT;
     }
@@ -152,8 +151,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
 
     case RES_O_LINK_UTILIZATION:
     {
-		int linkUtilization;
-    	atiny_cmd_ioctl(ATINY_GET_LINK_UTILIZATION, (char*)&linkUtilization, sizeof(int));
+        atiny_cmd_ioctl(ATINY_GET_LINK_UTILIZATION, (char*)&(connDataP->linkUtilization), sizeof(int));
         lwm2m_data_encode_int(connDataP->linkUtilization, dataP);
         return COAP_205_CONTENT;
     }
