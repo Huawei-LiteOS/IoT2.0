@@ -26,7 +26,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "liblwm2m.h"
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // after 40sec of inactivity we rehandshake
 #define DTLS_NAT_TIMEOUT 40
@@ -61,5 +63,9 @@ void lwm2m_close_connection(void * sessionH, void * userData);
 
 // rehandshake a connection, useful when your NAT timed out and your client has a new IP/PORT
 //int connection_rehandshake(dtls_connection_t *connP, bool sendCloseNotify);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

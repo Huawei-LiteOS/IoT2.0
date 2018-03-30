@@ -12,6 +12,10 @@
 #include "atiny_adapter.h"
 #include "agenttiny.h"
 
+#ifdef __GNUC__
+#include <errno.h>
+#endif
+
 #define _SOCKLEN_T
 
 typedef struct

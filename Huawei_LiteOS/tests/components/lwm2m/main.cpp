@@ -6,12 +6,13 @@
 #include "test_object_device.h"
 #include "test_object_firmware.h"
 #include "test_object_app.h"
-//#include "test_connection.h"
+#include "test_connection.h"
 
 
 int main(){
   Test::Suite ts;
   ts.add(std::auto_ptr<Test::Suite>(new TestAgenttiny));
+  ts.add(std::auto_ptr<Test::Suite>(new TestConnection));
   ts.add(std::auto_ptr<Test::Suite>(new TestObjectConnectivityMoni));
   ts.add(std::auto_ptr<Test::Suite>(new TestObjectDevice));
   ts.add(std::auto_ptr<Test::Suite>(new TestObjectFirmware));

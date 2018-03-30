@@ -15,8 +15,9 @@ else
 CFLAGS := 
 endif
 CFLAGS += -DSTM32F429_439xx -DUSE_STDPERIPH_DRIVER -DUSE_MBED_TLS -DMBEDTLS_CONFIG_FILE="<los_mbedtls_config.h>" -DWITH_LWIP -DLWM2M_LITTLE_ENDIAN -DLWM2M_CLIENT_MODE -DNDEBUG
-CFLAGS += -DLWIP_TIMEVAL_PRIVATE=0 -DBYTE_ORDER
-
+CFLAGS += -DLWIP_TIMEVAL_PRIVATE=0 -DBYTE_ORDER -DLWIP_COMPAT_SOCKETS=0
+CFLAGS += -fprofile-arcs -ftest-coverage
+GCOV_FLAGS := --rc lcov_branch_coverage=1 --rc  genhtml_branch_coverage=1
 #compile dynamic library of agenttiny.c
 
 SRC:= $(wildcard *.c, $(HW_LITEOSDIR)/components/connectivity/agent_tiny/lwm2m_client/*.c)
@@ -51,10 +52,17 @@ INCLUDES:= -I$(HW_LITEOSDIR)/components/connectivity/lwm2m/core/ \
     -I$(HW_LITEOSDIR)/components/connectivity/agent_tiny/examples/ \
 
 
-CPP_OBJ:=main.o test_agenttiny.o test_object_connectivity_moni.o test_object_device.o test_object_firmware.o test_object_app.o
+CPP_OBJ:=main.o test_agenttiny.o test_connection.o test_object_connectivity_moni.o test_object_device.o test_object_firmware.o test_object_app.o
 C_OBJ:=adapter_layer.o 
 all:lib $(BIN)
 lib:$(LIB)
+TEST_GCDA:=$(patsubst %.o, %.gcda, $(CPP_OBJ))
+TEST_GCDA+=$(patsubst %.o, %.gcda, $(C_OBJ))
+TEST_GCDA+=$(patsubst %.o, %.gcda, $(LIB_OBJ))
+
+TEST_GCNO:=$(patsubst %.o, %.gcno, $(CPP_OBJ))
+TEST_GCNO+=$(patsubst %.o, %.gcno, $(C_OBJ))
+TEST_GCNO+=$(patsubst %.o, %.gcno, $(LIB_OBJ))
 
 $(BIN):$(C_OBJ) $(CPP_OBJ)
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $^ -lagenttiny -L. -lcpptest -lpthread
@@ -73,7 +81,13 @@ $(LIB_OBJ):%.o:%.c
 	$(CC) $(CFLAGS)	$(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf *.so *.o *.a $(LIB_OBJ) $(C_OBJ) $(CPP_OBJ) *.htm bin
+	rm -rf *.so *.o *.a $(LIB_OBJ) $(C_OBJ) $(CPP_OBJ) *.htm bin $(TEST_GCDA) $(TEST_GCNO) gcov
 
 run:
 	./bin
+
+cov:
+	mkdir -p gcov
+	./$(BIN)
+	lcov -c -o gcov/gcov.info -d $(HW_LITEOSDIR) -b . --rc lcov_branch_coverage=1
+	genhtml -o gcov/html gcov/gcov.info --rc genhtml_branch_coverage=1
