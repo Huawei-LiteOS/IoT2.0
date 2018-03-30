@@ -8,6 +8,7 @@
 #include "atiny_log.h"
 #include "object_comm.h"
 #include "atiny_rpt.h"
+#include "test_object_app.h"
 
 atiny_param_t* atiny_params; 
 atiny_security_param_t  *security_param = NULL;
@@ -42,8 +43,7 @@ void param_init()
 	
 }
 
-class myTest: public Test::Suite{
-      void test_func1(){
+void TestObjectApp::test_func1(){
       int result;
       int len = 1; 
 	  lwm2m_uri_t uri = {.flag = 0x07, .objectId = 19, .instanceId = 0, .resourceId = 0};
@@ -161,11 +161,11 @@ class myTest: public Test::Suite{
 	  
       free_platform_object(testObj);
   
-      };
+}
 	  
-	  void test_func2(){
+void TestObjectApp::test_func2(){
       int result;
-      int len = 0; 
+      int len = 0;
 	  uint8_t * buffer = NULL;
 	  lwm2m_uri_t uri = {.flag = 0x07, .objectId = 19, .instanceId = 0, .resourceId = 0};
 	  lwm2m_object_t * testObj = NULL;
@@ -207,8 +207,8 @@ class myTest: public Test::Suite{
 	  lwm2m_data_free(1,dataP);
 	  free_object_device(testObj);
 	  
-      };
-      void test_func3(){
+}
+void TestObjectApp::test_func3(){
       int result;
 	  lwm2m_uri_t uri = {.flag = 0x07, .objectId = 19, .instanceId = 0, .resourceId = 0};
 	  lwm2m_object_t * testObj = NULL;
@@ -246,37 +246,22 @@ class myTest: public Test::Suite{
 	  uri.resourceId = 4;
 	  result = testObj->executeFunc(uri.instanceId, uri.resourceId, buffer, sizeof(buffer), testObj);
 	  TEST_ASSERT_MSG(result == COAP_404_NOT_FOUND, "Obj_app execute /19/1/4 failed");
-	  };
+}
 
-public:
-  myTest(){
-    TEST_ADD(myTest::test_func1);
-	TEST_ADD(myTest::test_func2);
-	TEST_ADD(myTest::test_func3);
+
+  TestObjectApp::TestObjectApp(){
+      TEST_ADD(TestObjectApp::test_func1);
+      TEST_ADD(TestObjectApp::test_func2);
+      TEST_ADD(TestObjectApp::test_func3);
   }
 
-  protected:
-  void setup(){
-    std::cout<<"in steup\n";
+  void TestObjectApp::setup(){
+      std::cout<<"in steup\n";
   }
 
-  void tear_down(){
-    std::cout<<"in teardown\n";
+  void TestObjectApp::tear_down(){
+      std::cout<<"in teardown\n";
 	
   }
-};
 
-int main()
-{
-  Test::Suite ts;
-  ts.add(std::auto_ptr<Test::Suite>(new myTest));
-  //myTest tests;
-  std::ofstream pages;
-
-  Test::HtmlOutput output;
-  pages.open("pages.htm");
-  ts.run(output);
-  output.generate(pages);
-  return 0;
-}
 
