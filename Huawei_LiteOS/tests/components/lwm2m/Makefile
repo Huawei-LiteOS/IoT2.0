@@ -10,7 +10,7 @@ LIB:= libagenttiny.a
 
 HW_LITEOSDIR:=../../..
 ifeq ($(FOR32), true)
-#CFLAGS := -m32  -march=i386 -mtune=i386
+CFLAGS := -m32  -march=i386 -mtune=i386
 else
 CFLAGS := 
 endif

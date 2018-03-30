@@ -14,15 +14,15 @@ void TestAgenttiny::test_func2(){
   atiny_param_t * atiny_param = &this->prv_atiny_params;
   void * handle = this->prv_handle;
   atiny_security_param_t *security_param = NULL;
-    atiny_param->server_params.binding = "UQS";
+    atiny_param->server_params.binding = (char *)"UQS";
     atiny_param->server_params.life_time = 20;
     atiny_param->server_params.storing = FALSE;
     atiny_param->server_params.storing_cnt = 0;
 
     security_param = &(atiny_param->security_params[0]);
     security_param->is_bootstrap = FALSE;
-    security_param->server_ip = "139.159.209.89";
-    security_param->server_port = "5684";
+    security_param->server_ip = (char *)"139.159.209.89";
+    security_param->server_port = (char *)"5684";
     //security_param->psk_Id = "666003";
 
     TEST_ASSERT_EQUALS(atiny_init(atiny_param, &handle), ATINY_OK);
@@ -51,8 +51,8 @@ void TestAgenttiny::test_func3(){
 void TestAgenttiny::test_func4(){
       atiny_device_info_t dev_info;
       
-      dev_info.endpoint_name = "test_epname";
-      dev_info.manufacturer = "prv_manu";
+      dev_info.endpoint_name = (char *)"test_epname";
+      dev_info.manufacturer = (char *)"prv_manu";
       dev_info.dev_type = NULL;
 
       int ret = atiny_bind(NULL, NULL);
@@ -81,7 +81,7 @@ TestAgenttiny::TestAgenttiny(){
 void TestAgenttiny::setup(){
     atiny_param_t* atiny_params = &(this->prv_atiny_params);
  
-    atiny_params->server_params.binding = "UQS";
+    atiny_params->server_params.binding = (char *)"UQS";
     atiny_params->server_params.life_time = 20;
     atiny_params->server_params.storing = FALSE;
     atiny_params->server_params.storing_cnt = 0;

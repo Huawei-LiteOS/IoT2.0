@@ -15,7 +15,7 @@ extern "C" {
 
 void atiny_log(const char* fmt, ...)
 {
-  printf(fmt);
+  printf("%s",fmt);
   return;
 }
 
@@ -67,7 +67,7 @@ UINT32 LOS_BinarySemCreate (UINT16 usCount, UINT32 *puwSemHandle)
   sem_t  *sem = (sem_t *)puwSemHandle;
   printf("in %s\n", __func__);
   UINT32 ret = -1;//sem_init(&sem, 0, usCount);
-  printf("ret = %d in %s, sem.len = %d\n", ret, __func__, sem);
+  printf("ret = %d in %s, sem.len = %d\n", ret, __func__, sizeof(sem));
   return ret;
   //   return 0;
 }
