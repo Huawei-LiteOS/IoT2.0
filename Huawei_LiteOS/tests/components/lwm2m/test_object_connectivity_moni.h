@@ -9,7 +9,7 @@ class TestObjectConnectivityMoni:public Test::Suite {
   void setup();
 
  public:
-  void test_func1();
+  void test_prv_read();
 
 
   TestObjectConnectivityMoni();

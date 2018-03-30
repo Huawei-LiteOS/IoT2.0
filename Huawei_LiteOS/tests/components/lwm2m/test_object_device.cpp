@@ -12,7 +12,7 @@
 /* testcase for read 3/0 in object_app.c 
 */
 
-    void TestObjectDevice::test_func1(){
+    void TestObjectDevice::test_prv_device_read(){
       int result;
       int len = 1; 
 	  lwm2m_uri_t uri = {.flag = 0x07, .objectId = 3, .instanceId = 0, .resourceId = 0};
@@ -136,7 +136,7 @@
 	  
       }
 	  
-	  void TestObjectDevice::test_func2(){
+	  void TestObjectDevice::test_prv_device_execute(){
       int result;
       int len = 0; 
 	  uint8_t * buffer = NULL;
@@ -173,8 +173,8 @@
 
 
   TestObjectDevice::TestObjectDevice(){
-    TEST_ADD(TestObjectDevice::test_func1);
-	TEST_ADD(TestObjectDevice::test_func2);
+    TEST_ADD(TestObjectDevice::test_prv_device_read);
+	TEST_ADD(TestObjectDevice::test_prv_device_execute);
 
   }
 
