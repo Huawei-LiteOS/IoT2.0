@@ -18,6 +18,10 @@
  *
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "los_mbedtls_config.h"
@@ -75,5 +79,9 @@ int dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len);
 int dtls_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len, uint32_t timeout);
 
 
+
+#ifdef __cplusplus
+}
+#endif
 
 
