@@ -578,6 +578,18 @@ typedef struct _lwm2m_client_
     lwm2m_observation_t *   observationList;
 } lwm2m_client_t;
 
+/* when change the value, must refer to DATA_SEND_STATUS */
+typedef enum
+{
+    TRANS_NOT_SENT              = 0,
+    TRANS_SENT_WAIT_RESPONSE    = 1,
+    TRANS_SENT_FAIL             = 2,
+    TRANS_SENT_TIME_OUT         = 3,
+    TRANS_RECV_ACK              = 4,
+    TRANS_RECV_RST              = 5,
+    TRANS_SEND_PENDING          = 6
+}TRANS_STATUS;
+
 
 /*
  * LWM2M transaction

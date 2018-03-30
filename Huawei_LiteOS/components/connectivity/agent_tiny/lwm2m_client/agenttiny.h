@@ -149,16 +149,17 @@ void atiny_deinit(void* phandle);
 
 #define MAX_REPORT_DATA_LEN      1024  /*´ýÕå×Ã*/
 #define MAX_BUFFER_REPORT_CNT 8
+
+
 typedef enum
 {
-    NOT_SENT = 0,
-    SENT_WAIT_RESPONSE,
-    SENT_FAIL,
-    SENT_TIME_OUT,
-    SENT_SUCCESS,
-    SENT_GET_RST,
-    SEND_PENDING,
-    OBSERVE_CANCEL
+    NOT_SENT            = 0,
+    SENT_WAIT_RESPONSE  = 1,
+    SENT_FAIL           = 2,
+    SENT_TIME_OUT       = 3,
+    SENT_SUCCESS        = 4,
+    OBSERVE_CANCEL      = 5,
+    SEND_PENDING        = 6
 }DATA_SEND_STATUS;
 
 typedef void (*atiny_ack_callback) (atiny_report_type_e type, int cookie, DATA_SEND_STATUS status);
