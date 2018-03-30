@@ -38,12 +38,15 @@ class TestAgenttiny:public Test::Suite {
   void setup();
 
  public:
-  void test_func1();
-  void test_func2();
-  void test_func3();
-  void test_func4();
-  void test_func5();
-
+  void test_atiny_init();
+  void test_atiny_state_is_ready();
+  void test_atiny_bind();
+  void test_atiny_init_objects();
+  void test_atiny_destory();
+  void test_atiny_deinit();
+  void test_atiny_data_report();
+  void test_observe_handleAck();
+  
   TestAgenttiny();
 };
 #endif

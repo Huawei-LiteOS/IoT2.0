@@ -13,25 +13,21 @@ typedef struct
 }
 atiny_net_context;
 
-void TestConnection::test_func1()
-{
-  connection_t conn;
-  lwm2m_object_t securityObj;
-
-  securityObj.instanceList = NULL;
-  connection_t * connP = connection_create(&conn, &securityObj, 0, NULL);
-  TEST_ASSERT((connP == NULL));
-}
-
 void * stub_atiny_net_connect(const char *host, const char *port, int proto)
 {
   return NULL;
 }
 
-void TestConnection::test_func2()
+void TestConnection::test_connection_create()
 {
   connection_t conn;
-  connection_t * connP = NULL;
+  lwm2m_object_t securityObj0;
+
+  securityObj0.instanceList = NULL;
+  connection_t * connP = connection_create(&conn, &securityObj0, 0, NULL);
+  TEST_ASSERT((connP == NULL));
+
+  connP = NULL;
   lwm2m_context_t context;
   atiny_param_t* atiny_params = &this->prv_atiny_params;
   int serverId = 123;
@@ -67,12 +63,6 @@ void TestConnection::test_func2()
   clean_security_object(securityObj);
 }
 
-void TestConnection::test_func3()
-{
-  uint8_t ret = lwm2m_buffer_send(NULL, NULL, 0, NULL);
-  TEST_ASSERT((ret == COAP_500_INTERNAL_SERVER_ERROR));
-}
-
 int stub_atiny_net_send1( void *ctx, const unsigned char *buf, size_t len )
 {
   //stub func for test lwm2m_buffer_send(), return len
@@ -81,73 +71,63 @@ int stub_atiny_net_send1( void *ctx, const unsigned char *buf, size_t len )
 }
 
 
-void TestConnection::test_func4()
+void TestConnection::test_lwm2m_buffer_send()
 {
   connection_t conn;
   uint8_t buf[64] = "test str";
   stubInfo si;
+  
+  uint8_t ret = lwm2m_buffer_send(NULL, NULL, 0, NULL);
+  TEST_ASSERT((ret == COAP_500_INTERNAL_SERVER_ERROR));
 
   setStub((void*)atiny_net_send, (void*)stub_atiny_net_send1, &si);
   
-  uint8_t ret = lwm2m_buffer_send(&conn, buf, ATINY_ERR_INVALID_CONTEXT, NULL);
+  ret = lwm2m_buffer_send(&conn, buf, ATINY_ERR_INVALID_CONTEXT, NULL);
   TEST_ASSERT((ret == COAP_500_INTERNAL_SERVER_ERROR));
 
   ret = lwm2m_buffer_send(&conn, buf, COAP_NO_ERROR, NULL);
   TEST_ASSERT((ret == 0));
 
   cleanStub(&si);
-}
 
-void TestConnection::test_func5()
-{
-  connection_t conn;
+  
   atiny_net_context anc;
-  const char * buf = "hello test";
   char buf2[64] = {0};
 
   conn.net_context = &anc;
   anc.fd = open("./demo", O_CREAT|O_RDWR, 0777);
   unlink("./demo");
-  uint8_t ret = lwm2m_buffer_send(&conn, (uint8_t*)buf, strlen(buf), NULL);
+  ret = lwm2m_buffer_send(&conn, buf, strlen((char*)buf), NULL);
 
   read(anc.fd, buf2, 64);
-  TEST_ASSERT((strncmp(buf, buf2, strlen(buf))));
+  TEST_ASSERT((strncmp((char *)buf, buf2, strlen((char*)buf))));
   close(anc.fd);
 }
-void TestConnection::test_func6()
-{
-  bool ret = lwm2m_session_is_equal(NULL, NULL, NULL);
-  TEST_ASSERT((ret == true));
-}
 
-void TestConnection::test_func7()
+void TestConnection::test_lwm2m_session_is_equal()
 {
   connection_t connA;
   connection_t connB;
-  bool ret = lwm2m_session_is_equal((void *)&connA, (void*)&connB, NULL);
 
-  TEST_ASSERT((ret == false));
   
-}
+  bool ret = lwm2m_session_is_equal(NULL, NULL, NULL);
+  TEST_ASSERT((ret == true));
 
-void TestConnection::test_func8()
-{
-  connection_t connA;
   connection_t * p_connB = &connA;
-  bool ret = lwm2m_session_is_equal((void *)&connA, (void*)p_connB, NULL);
+  ret = lwm2m_session_is_equal((void *)&connA, (void*)p_connB, NULL);
 
   TEST_ASSERT((ret == true));
+
+  ret = lwm2m_session_is_equal((void *)&connA, (void*)&connB, NULL);
+
+  TEST_ASSERT((ret == false));
+
 }
 TestConnection::TestConnection(){
 
-  TEST_ADD(TestConnection::test_func1);
-  TEST_ADD(TestConnection::test_func2);
-  TEST_ADD(TestConnection::test_func3);
-  TEST_ADD(TestConnection::test_func4);
-  TEST_ADD(TestConnection::test_func5);
-  TEST_ADD(TestConnection::test_func6);
-  TEST_ADD(TestConnection::test_func7);
-  TEST_ADD(TestConnection::test_func8);
+  TEST_ADD(TestConnection::test_connection_create);
+  TEST_ADD(TestConnection::test_lwm2m_buffer_send);
+  TEST_ADD(TestConnection::test_lwm2m_session_is_equal);
 }
 
 void TestConnection::setup()
@@ -158,18 +138,18 @@ void TestConnection::setup()
   void *handle = this->prv_handle;
 
   std::cout<<"init for TestConnection\n";
-  device_info->endpoint_name = "xxxxxxxx";
-  device_info->manufacturer = "test";
+  device_info->endpoint_name = (char*)"xxxxxxxx";
+  device_info->manufacturer = (char*)"test";
 
-  atiny_params->server_params.binding = "UQS";
+  atiny_params->server_params.binding = (char*)"UQS";
   atiny_params->server_params.life_time = 50000;
   atiny_params->server_params.storing = 0;
   atiny_params->server_params.storing_cnt = 0;
 
   security_param = &(atiny_params->security_params[0]);
   security_param->is_bootstrap = 0;
-  security_param->server_ip = "139.159.209.89";
-  security_param->server_port = "5683";
+  security_param->server_ip = (char*)"139.159.209.89";
+  security_param->server_port = (char*)"5683";
   security_param->psk_Id = NULL;
   security_param->psk = NULL;
   security_param->psk_len = 0;

@@ -4,18 +4,16 @@
 #include <memory>
 #include "test_agenttiny.h"
 
-void TestAgenttiny::test_func1()
+void TestAgenttiny::test_atiny_init()
 {
-  atiny_param_t * p_atiny_param = NULL;
+  atiny_param_t * atiny_param = NULL;
   void * handle = NULL;
-  TEST_ASSERT_MSG((atiny_init(p_atiny_param, &handle) == ATINY_ARG_INVALID), "Test atiny_init(NULL, NULL) Failed");
-}
-
-void TestAgenttiny::test_func2()
-{
-  atiny_param_t * atiny_param = &this->prv_atiny_params;
-  void * handle = this->prv_handle;
   atiny_security_param_t *security_param = NULL;
+
+  TEST_ASSERT_MSG((atiny_init(atiny_param, &handle) == ATINY_ARG_INVALID), "Test atiny_init(NULL, NULL) Failed");
+
+  atiny_param = &this->prv_atiny_params;
+  handle = this->prv_handle;
   atiny_param->server_params.binding = (char *)"UQS";
   atiny_param->server_params.life_time = 20;
   atiny_param->server_params.storing = FALSE;
@@ -39,47 +37,80 @@ void TestAgenttiny::test_func2()
   TEST_ASSERT(0 == memcmp(((handle_data_t*)this->prv_handle)->atiny_params.security_params[0].server_port, "5684", strlen("5684")));
 }
 
-void TestAgenttiny::test_func3()
-{
-  atiny_log_e log_level = atiny_get_log_level();
-  atiny_set_log_level(LOG_FATAL);
-  TEST_ASSERT((atiny_get_log_level() == LOG_FATAL));
-  atiny_set_log_level(LOG_INFO);
-  TEST_ASSERT((atiny_get_log_level() == LOG_INFO));
-  atiny_set_log_level(log_level);
-  TEST_ASSERT((atiny_get_log_level() == log_level));
-}
-
-void TestAgenttiny::test_func4()
+void TestAgenttiny::test_atiny_bind()
 {
   atiny_device_info_t dev_info;
 
-  dev_info.endpoint_name = (char *)"test_epname";
-  dev_info.manufacturer = (char *)"prv_manu";
+  dev_info.endpoint_name = NULL;
+  dev_info.manufacturer = NULL;
   dev_info.dev_type = NULL;
 
   int ret = atiny_bind(NULL, NULL);
   TEST_ASSERT((ret == ATINY_ARG_INVALID));
 
-  //      ret = atiny_bind(&dev_info, this->prv_handle);
-  //TEST_ASSERT((0));
+  ret = atiny_bind(&dev_info, this->prv_handle);
+  TEST_ASSERT((ret == ATINY_ARG_INVALID));
+  
+  ret = atiny_bind(&dev_info, this->prv_handle);
+  TEST_ASSERT((ret == ATINY_ARG_INVALID));
+  dev_info.manufacturer = NULL;(char *)"prv_manu";
+  //TODO
 }
-
-void TestAgenttiny::test_func5()
+extern int atiny_state_is_ready(void *phandle);
+void TestAgenttiny::test_atiny_state_is_ready()
 {
-  void * handle = NULL;
-  stubInfo si;
-  //       setStub((void*)atiny_init, (void*)stub_atiny_init, &si);
-  atiny_init(NULL, NULL);
-  cleanStub(&si);
+  handle_data_t handle;
+  lwm2m_context_t context;
+
+  handle.lwm2m_context = &context;
+
+  context.state = STATE_READY;
+  TEST_ASSERT((atiny_state_is_ready(&handle) == true));
+
+  context.state = STATE_INITIAL;
+  TEST_ASSERT((atiny_state_is_ready(&handle) == false));
+}
+void TestAgenttiny::test_atiny_init_objects()
+{
+  
 }
 
+void TestAgenttiny::test_atiny_destory()
+{
+  
+}
+
+void TestAgenttiny::test_atiny_deinit()
+{
+  handle_data_t * handle = NULL;
+  //  atiny_deinit(handle);
+
+  handle = (handle_data_t*)this->prv_handle;
+  atiny_deinit(handle);
+  TEST_ASSERT((handle->atiny_quit == 1));
+  
+}
+
+void TestAgenttiny::test_atiny_data_report()
+{
+
+}
+
+void TestAgenttiny::test_observe_handleAck()
+{
+
+}
 TestAgenttiny::TestAgenttiny()
 {
-  TEST_ADD(TestAgenttiny::test_func1);
-  TEST_ADD(TestAgenttiny::test_func2);
-  TEST_ADD(TestAgenttiny::test_func3);
-  TEST_ADD(TestAgenttiny::test_func4);
+  TEST_ADD(TestAgenttiny::test_atiny_init);
+  TEST_ADD(TestAgenttiny::test_atiny_bind);
+  TEST_ADD(TestAgenttiny::test_atiny_state_is_ready);
+  TEST_ADD(TestAgenttiny::test_atiny_init_objects);
+  TEST_ADD(TestAgenttiny::test_atiny_destory);
+  TEST_ADD(TestAgenttiny::test_atiny_deinit);
+  TEST_ADD(TestAgenttiny::test_observe_handleAck);
+  TEST_ADD(TestAgenttiny::test_atiny_data_report);
+
 }
 
 //protected:

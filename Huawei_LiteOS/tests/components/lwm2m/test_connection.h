@@ -13,14 +13,9 @@ class TestConnection: public Test::Suite {
   void tear_down();
 
  public:
-  void test_func1();
-  void test_func2();
-  void test_func3();
-  void test_func4();
-  void test_func5();
-  void test_func6();
-  void test_func7();
-  void test_func8();
+  void test_connection_create();
+  void test_lwm2m_buffer_send();
+  void test_lwm2m_session_is_equal();
 
   TestConnection();
   
