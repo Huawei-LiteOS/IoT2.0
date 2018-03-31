@@ -568,8 +568,8 @@ void observe_app_step(lwm2m_context_t * contextP,
                     coap_set_header_observe(transaction->message, watcherP->counter++);
                     coap_set_payload(transaction->message, buffer, length);
                     contextP->transactionList = (lwm2m_transaction_t *)LWM2M_LIST_ADD(contextP->transactionList, transaction);
+                    LOG_ARG("notify con msg, cookie:%d type:%d", transaction->cfg.cookie, transaction->cfg.type);                    
                     (void)transaction_send(contextP, transaction);
-                    LOG_ARG("notify con msg, cookie:%d type:%d", transaction->cfg.cookie, transaction->cfg.type);
                 }
             }
         }
