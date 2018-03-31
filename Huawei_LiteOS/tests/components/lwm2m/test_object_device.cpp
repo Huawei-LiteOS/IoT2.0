@@ -179,7 +179,7 @@
   }
 
   void TestObjectDevice::setup(){
-    std::cout<<"in steup\n";
+    std::cout<<"in TestObjectDevice steup\n";
   }
 
   void TestObjectDevice::tear_down(){

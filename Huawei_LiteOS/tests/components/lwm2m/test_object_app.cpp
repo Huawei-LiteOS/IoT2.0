@@ -56,11 +56,7 @@ void TestObjectApp::test_func1(){
 	  TEST_ASSERT_MSG(testObj != NULL, "test get_platform_object() failed");
 	  TEST_ASSERT_MSG(testObj->readFunc != NULL, "testObj->readFunc != NULL failed");
 	  TEST_ASSERT_MSG(testObj->instanceList != NULL, "testObj->instanceList != NULL failed");
-		 
-	  lwm2m_list_t * list = lwm2m_list_find(testObj->instanceList, uri.instanceId);
-	  TEST_ASSERT_MSG(list != NULL, "Obj_app find instance failed");
-//Obj_app->readFunc can only read 19/0/0,19/1/0,19/0,19/1
-      //read 19/0/0
+
 	  data = lwm2m_data_new(1);
 	  uri.resourceId = 0;
 	  data->id = uri.resourceId;
@@ -84,8 +80,7 @@ void TestObjectApp::test_func1(){
       report_data.type = APP_DATA;  
 	  param_init();
 	  ret = atiny_init(atiny_params, &g_phandle);//init g_handle
-	  client_data_t *pdata = (client_data_t *)malloc(sizeof(client_data_t));
-	  memset(pdata, 0, sizeof(client_data_t));   
+	  client_data_t *pdata = &((handle_data_t *)g_phandle)->client_data;  
       lwm2m_context_t * lwm2m_context = lwm2m_init(pdata);
 	  lwm2m_context->state = STATE_READY;
 	  ((handle_data_t*)g_phandle)->lwm2m_context = lwm2m_context;
@@ -256,11 +251,11 @@ void TestObjectApp::test_func3(){
   }
 
   void TestObjectApp::setup(){
-      std::cout<<"in steup\n";
+      std::cout<<"in TestObjectApp steup\n";
   }
 
   void TestObjectApp::tear_down(){
-      std::cout<<"in teardown\n";
+      std::cout<<"in TestObjectApp teardown\n";
 	
   }
 

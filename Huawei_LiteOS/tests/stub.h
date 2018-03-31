@@ -9,6 +9,7 @@ typedef struct stubInfo {
 } stubInfo;  
 
 void setStub(void *funcAddr, void *stubAddr, stubInfo *si);
+void setIntStub(int *funcAddr, int *stubAddr, stubInfo *si);
 void cleanStub(stubInfo *si);
 
 #ifdef __cplusplus

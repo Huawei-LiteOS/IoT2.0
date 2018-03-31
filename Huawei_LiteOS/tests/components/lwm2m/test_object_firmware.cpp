@@ -80,11 +80,11 @@
   }
 
   void TestObjectFirmware::setup(){
-    std::cout<<"in steup\n";
+    std::cout<<"in TestObjectFirmware steup\n";
   }
 
   void TestObjectFirmware::tear_down(){
-    std::cout<<"in teardown\n";
+    std::cout<<"in TestObjectFirmware teardown\n";
   }
 
 

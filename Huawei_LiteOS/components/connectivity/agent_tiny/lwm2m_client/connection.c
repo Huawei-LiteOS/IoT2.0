@@ -155,6 +155,8 @@ connection_t * connection_create(connection_t * connList,
 
 void connection_free(connection_t * connP)
 {
+    if(NULL == connP)
+        return;
 #ifdef WITH_DTLS    
     if (connP->dtls_flag == true) {
         dtls_ssl_destroy(connP->net_context);

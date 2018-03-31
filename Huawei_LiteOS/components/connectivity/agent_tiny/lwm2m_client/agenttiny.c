@@ -74,18 +74,19 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     int serverId = 123;
     char * epname = (char *)device_info->endpoint_name;
 
-        /*init objects*/
-    if(atiny_params == NULL)
-    {
-        return ATINY_ARG_INVALID;
-    }
-
     result = atiny_init_rpt();
     if (result != ATINY_OK)
     {
         ATINY_LOG(LOG_FATAL, "atiny_init_rpt fail,ret=%d", result);
         return result;
     }
+        /*init objects*/
+    if(atiny_params == NULL)
+    {
+        return ATINY_ARG_INVALID;
+    }
+
+    
     
     pdata = &handle->client_data;
     memset(pdata, 0, sizeof(client_data_t));
@@ -96,7 +97,7 @@ int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* 
     lwm2m_context = lwm2m_init(pdata);
     if (NULL == lwm2m_context)
     {   
-        lwm2m_free(pdata);
+        //lwm2m_free(pdata);
         return ATINY_MALLOC_FAILED;
     } 
     

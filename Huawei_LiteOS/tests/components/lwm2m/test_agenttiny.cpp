@@ -4,6 +4,99 @@
 #include <memory>
 #include "test_agenttiny.h"
 
+unsigned long g_lwm2m_context           = 0;
+unsigned long g_object_security_pointer = 0;
+unsigned long g_object_server_pointer   = 0;
+unsigned long g_object_device_pointer   = 0;
+unsigned long g_object_firmware_pointer = 0;
+unsigned long g_object_conn_m_pointer   = 0;
+unsigned long g_object_app_pointer      = 0;
+unsigned long g_atiny_mutex_pointer     = 0;
+
+
+extern  "C"
+{
+    extern int  atiny_init_objects(atiny_param_t* atiny_params, const atiny_device_info_t* device_info, handle_data_t *handle);
+    extern lwm2m_context_t * lwm2m_init(void * userData);
+    extern lwm2m_object_t * get_security_object(int serverId,
+                                     const char* serverUri,
+                                     char * bsPskId,
+                                     char * psk,
+                                     uint16_t pskLen,
+                                     bool isBootstrap);
+    extern lwm2m_object_t * get_server_object(int serverId,
+                                   const char* binding,
+                                   int lifetime,
+                                   bool storing);
+    extern lwm2m_object_t * get_object_device(atiny_param_t *atiny_params, const char* manufacturer);
+    extern lwm2m_object_t * get_object_firmware(atiny_param_t *atiny_params);
+    extern lwm2m_object_t * get_object_conn_m(atiny_param_t* atiny_params);
+    extern lwm2m_object_t * get_platform_object(atiny_param_t* atiny_params);
+    extern void atiny_detroy(void* handle);
+	 
+    lwm2m_context_t * stub_lwm2m_init(void * userData)
+    {
+        return (lwm2m_context_t *)g_lwm2m_context;
+    }
+	 
+     lwm2m_object_t * stub_get_security_object(int serverId,
+                                     const char* serverUri,
+                                     char * bsPskId,
+                                     char * psk,
+                                     uint16_t pskLen,
+                                     bool isBootstrap)
+    {
+        return (lwm2m_object_t *)g_object_security_pointer;
+    }
+
+    lwm2m_object_t * stub_get_server_object(int serverId,
+                                   const char* binding,
+                                   int lifetime,
+                                   bool storing)
+    {
+        return (lwm2m_object_t *)g_object_server_pointer;
+    }
+
+    lwm2m_object_t * stub_get_object_device(atiny_param_t *atiny_params, const char* manufacturer)
+    {
+        return (lwm2m_object_t *)g_object_device_pointer;
+    }
+
+    lwm2m_object_t * stub_get_object_firmware(atiny_param_t *atiny_params)
+    {
+        return (lwm2m_object_t *)g_object_firmware_pointer;
+    }
+	 
+    lwm2m_object_t * stub_get_object_conn_m(atiny_param_t* atiny_params)
+    {
+        return (lwm2m_object_t *)g_object_conn_m_pointer;
+    }
+	 
+    lwm2m_object_t * stub_get_platform_object(atiny_param_t* atiny_params)
+    {
+        return (lwm2m_object_t *)g_object_app_pointer;
+    }
+
+    void *stub_atiny_mutex_create(void)
+    {
+        printf("call stub_atiny_mutex_create ,%p\n",(void *)g_atiny_mutex_pointer);
+        return (void *)g_atiny_mutex_pointer;
+    }
+
+    void stub_atiny_mutex_destroy(void *mutex)
+    {
+    }
+    void stub_atiny_mutex_lock(void *mutex)
+    {
+        printf("call stub_atiny_mutex_lock ,%p\n",mutex);
+    }
+    void stub_atiny_mutex_unlock(void *mutex)
+    {
+        printf("call stub_atiny_mutex_unlock ,%p\n",mutex);
+    }
+}
+
+
 void TestAgenttiny::test_atiny_init()
 {
   atiny_param_t * atiny_param = NULL;
@@ -72,6 +165,170 @@ void TestAgenttiny::test_atiny_state_is_ready()
 }
 void TestAgenttiny::test_atiny_init_objects()
 {
+  atiny_param_t st_atiny_param;
+  atiny_param_t * atiny_param = NULL;
+  handle_data_t handle;
+  handle_data_t atiny_handle;
+  
+  atiny_security_param_t *security_param = NULL;
+
+  atiny_device_info_t dev_info;
+  dev_info.endpoint_name = (char *)"66660003";
+  dev_info.manufacturer  = (char *)"huawei";
+  char psk_c[16] = {0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99};
+
+  atiny_param = &st_atiny_param;
+  
+  memset(atiny_param,0,sizeof(*atiny_param)); 
+  atiny_param->server_params.binding = (char *)"UQS";
+  atiny_param->server_params.life_time = 20;
+  atiny_param->server_params.storing = FALSE;
+  atiny_param->server_params.storing_cnt = 0;
+
+  security_param = &(atiny_param->security_params[0]);
+  security_param->is_bootstrap = FALSE;
+  security_param->server_ip = (char *)"139.159.209.89";
+  security_param->server_port = (char *)"5684";
+  
+
+  /*¶ÔËø²Ù×÷´ò×®*/
+  stubInfo si_create_mutex;
+  stubInfo si_destroy_mutex;
+  stubInfo si_mutex_lock;
+  stubInfo si_mutex_unlock;
+  setStub((void *)atiny_mutex_create,(void *)stub_atiny_mutex_create,&si_create_mutex);
+  setStub((void *)atiny_mutex_destroy,(void *)stub_atiny_mutex_destroy,&si_destroy_mutex);
+  setStub((void *)atiny_mutex_lock,(void *)stub_atiny_mutex_lock,&si_mutex_lock);
+  setStub((void *)atiny_mutex_unlock,(void *)stub_atiny_mutex_unlock,&si_mutex_unlock);
+  
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(NULL, &dev_info, (handle_data_t *)&handle), ATINY_ARG_INVALID);
+  printf("after call atiny_init_objects!!!");
+  atiny_detroy((void *)&handle);
+  
+  
+  
+
+  
+  
+  g_atiny_mutex_pointer = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_RESOURCE_NOT_ENOUGH);
+  atiny_detroy((void *)&handle);
+  printf("\n");
+
+
+  
+  stubInfo si_lwm2m_init;
+  setStub((void *)lwm2m_init,(void *)stub_lwm2m_init,&si_lwm2m_init);
+  g_atiny_mutex_pointer = 0x1000000;
+  g_lwm2m_context = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle); 
+  cleanStub(&si_lwm2m_init);
+
+
+
+  stubInfo si_get_security_object;
+  setStub((void *)get_security_object,(void *)stub_get_security_object,&si_get_security_object);
+  g_atiny_mutex_pointer     = 0x1000000;
+  g_object_security_pointer = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle);
+  cleanStub(&si_get_security_object);
+
+  
+  stubInfo si_get_server_object;
+  setStub((void *)get_server_object,(void *)stub_get_server_object,&si_get_server_object);
+  g_atiny_mutex_pointer = 0x1000000; 
+  g_object_server_pointer   = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle);
+  cleanStub(&si_get_server_object);
+
+
+
+  stubInfo si_get_object_device;
+  setStub((void *)get_object_device,(void *)stub_get_object_device,&si_get_object_device);
+  g_atiny_mutex_pointer = 0x1000000; 
+  g_object_device_pointer   = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle);
+  cleanStub(&si_get_object_device);
+
+
+
+  stubInfo si_get_object_firmware;
+  setStub((void *)get_object_firmware,(void *)stub_get_object_firmware,&si_get_object_firmware);
+  g_atiny_mutex_pointer = 0x1000000; 
+  g_object_firmware_pointer = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle);
+  cleanStub(&si_get_object_firmware);
+
+  stubInfo si_get_object_conn_m;
+  setStub((void *)get_object_conn_m,(void *)stub_get_object_conn_m,&si_get_object_conn_m);
+  g_atiny_mutex_pointer = 0x1000000; 
+  g_object_conn_m_pointer   = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle);
+  cleanStub(&si_get_object_conn_m);
+
+  stubInfo si_get_platform_object;
+  setStub((void *)get_platform_object,(void *)stub_get_platform_object,&si_get_platform_object);
+  g_atiny_mutex_pointer = 0x1000000; 
+  g_object_app_pointer      = 0;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_MALLOC_FAILED);
+  atiny_detroy((void *)&handle);
+  cleanStub(&si_get_platform_object);
+  
+  printf("after si_get_platform_object \n");
+  
+  
+  
+  
+
+
+
+  security_param->psk_Id = NULL;
+  security_param->psk = NULL;
+  
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_OK);
+  atiny_detroy((void *)&handle);
+  
+#if 1
+  security_param->psk_Id = (char *)"66660003";
+  security_param->psk = psk_c;
+  security_param->psk_len = 16;
+  memset(&handle,0,sizeof(handle_data_t));
+  memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
+  TEST_ASSERT_EQUALS(atiny_init_objects(atiny_param, &dev_info, (handle_data_t *)&handle), ATINY_OK); 
+  atiny_detroy((void *)&handle);
+#endif
+  
+  cleanStub(&si_create_mutex);
+  cleanStub(&si_destroy_mutex);
+  cleanStub(&si_mutex_lock);
+  cleanStub(&si_mutex_unlock);
+
   
 }
 
@@ -116,6 +373,7 @@ TestAgenttiny::TestAgenttiny()
 //protected:
 void TestAgenttiny::setup()
 {
+  printf("setup in TestAgenttiny\n");
   atiny_param_t* atiny_params = &(this->prv_atiny_params);
 
   atiny_params->server_params.binding = (char *)"UQS";
@@ -130,5 +388,6 @@ void TestAgenttiny::setup()
 void TestAgenttiny::tear_down()
 {
   atiny_deinit(this->prv_handle);
+  printf("tear_down in TestAgenttiny\n");
 }
 

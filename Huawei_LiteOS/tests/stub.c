@@ -35,6 +35,22 @@ void setStub(void *funcAddr, void *stubAddr, stubInfo *si)
     //*(char*)funcAddr=0xe9;  
     //*(int*)((char*)funcAddr+1)=stubAddr-funcAddr-5;  
 }  
+
+void setIntStub(int *funcAddr, int *stubAddr, stubInfo *si)  
+{  
+    char jumpCode[5] = {0xe9}; //跳转指令  
+    int  dist = stubAddr - funcAddr - 5;    //相对偏移  
+  
+    memcpy((void *)&jumpCode[1], (void *)&dist, sizeof(void *));  
+    si->funcAddr = funcAddr; //保存原函数的地址  
+    memcpy((void *)&si->byteCode[0], (void *)funcAddr, 5);   //保存原地址处的指令  
+      
+    setJumpCode(funcAddr, jumpCode); //用跳转指令替换 原地址处的指令  
+    //此函数相当于：  
+    //*(char*)funcAddr=0xe9;  
+    //*(int*)((char*)funcAddr+1)=stubAddr-funcAddr-5;  
+}  
+
   
 void cleanStub(stubInfo *si)  
 {  

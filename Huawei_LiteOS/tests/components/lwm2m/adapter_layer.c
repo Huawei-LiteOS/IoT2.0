@@ -18,7 +18,7 @@ extern "C" {
 
 void atiny_log(const char* fmt, ...)
 {
-  printf("%s",fmt);
+  //printf("%s",fmt);
   return;
 }
 

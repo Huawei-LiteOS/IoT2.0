@@ -81,7 +81,7 @@
   }
 
   void TestObjectConnectivityMoni::setup(){
-    std::cout<<"in steup\n";
+    std::cout<<"in TestObjectConnectivityMoni steup\n";
   }
 
   void TestObjectConnectivityMoni::tear_down(){

@@ -132,6 +132,7 @@ TestConnection::TestConnection(){
 
 void TestConnection::setup()
 {
+  printf("setup in TestConnection\n");
   atiny_device_info_t *device_info = &this->prv_dev_info;
   atiny_param_t * atiny_params = &this->prv_atiny_params;
   atiny_security_param_t  *security_param = &(atiny_params->security_params[0]);
