@@ -27,13 +27,8 @@ int	atiny_snprintf(char *buf, unsigned int size, const char *format, ...)
 
 void	atiny_free(void *ptr)
 {
+	free(ptr);
 	return;
-}
-
-
-void*	atiny_net_connect( const char *host, const char *port, int proto )
-{
-	return NULL;
 }
 
 
@@ -42,6 +37,27 @@ void	atiny_usleep(unsigned long usec)
 	return;
 }
 
+
+uint64_t atiny_gettime_ms(void)
+{
+	return 0;
+}
+
+
+int	atiny_random(unsigned char *output, size_t len)
+{
+	return 0;
+}
+
+
+
+/*------net related-----------*/
+
+
+void	atiny_net_close( void *ctx )
+{
+	return;
+}
 
 int	atiny_net_recv( void *ctx, unsigned char *buf, size_t len )
 {
@@ -61,25 +77,10 @@ int	atiny_net_send( void *ctx, const unsigned char *buf, size_t len )
 }
 
 
-uint64_t atiny_gettime_ms(void)
+void*	atiny_net_connect( const char *host, const char *port, int proto )
 {
-	return 0;
+	return NULL;
 }
-
-
-int	atiny_random(unsigned char *output, size_t len)
-{
-	return 0;
-}
-
-
-void	atiny_net_close( void *ctx )
-{
-
-}
-
-
-
 
 #ifdef __cplusplus
 }

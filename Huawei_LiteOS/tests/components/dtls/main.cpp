@@ -18,5 +18,3 @@ int main()
   output.generate(html);
   html.close();
 }
-
-

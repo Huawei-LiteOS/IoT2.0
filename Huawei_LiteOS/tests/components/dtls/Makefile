@@ -104,5 +104,3 @@ cov:
 	./$(BIN)
 	lcov -c -o gcov/gcov.info -d $(HW_LITEOSDIR) -b . --rc lcov_branch_coverage=1
 	genhtml -o gcov/html gcov/gcov.info --rc genhtml_branch_coverage=1
-
-	

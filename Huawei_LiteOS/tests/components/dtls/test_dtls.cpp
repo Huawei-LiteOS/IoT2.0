@@ -11,6 +11,7 @@ unsigned int mbedtls_ssl_handshake_control_flag = 0;
 unsigned int mbedtls_ssl_conf_psk_control_flag = 0;
 unsigned int mbedtls_ssl_setup_control_flag = 0;
 unsigned int mbedtls_ssl_set_hostname_control_flag = 0;
+unsigned int mbedtls_ssl_config_defaults_control_flag = 0;
 mbedtls_net_context server_fd;
 
 
@@ -50,7 +51,7 @@ int test_dtls_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t l
 */
 void TestDtls::test_func_dtls_write()
 {
-	printf("\n\n test dtls_write:");
+	printf("test dtls_write:\n");
 	int ret = 0;
 	mbedtls_ssl_context ssl;
 	unsigned char buf[BUF_MAX_LEN + 1];
@@ -107,7 +108,7 @@ int  test_dtls_read( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len)
 */
 void TestDtls::test_func_dtls_read()
 {
-	printf("\n\n test dtls_read:");
+	printf("test dtls_read:\n");
 	int ret = 0;
 	mbedtls_ssl_context  ssl;
 	mbedtls_ssl_config   conf;
@@ -134,8 +135,9 @@ void TestDtls::test_func_dtls_read()
 }
 
 
+
 /*
-	use this function to substitute dtls_ssl_destroy 
+	use this function to substitute dtls_ssl_destroy in functions to be tested other than  dtls_ssl_destroy
 */
 void test_dtls_ssl_destroy(mbedtls_ssl_context *ssl)
 {
@@ -162,24 +164,89 @@ void test_dtls_ssl_destroy(mbedtls_ssl_context *ssl)
 	
 }
 
+
+/*
+	The next two functions is for test_func_dtls_ssl_destroy use only
+*/
+
+void * test_calloc_func( size_t, size_t )
+{
+	return NULL;
+}
+                              
+void test_free_func( void * )
+{
+	return;
+}
+
+/*
+	next three functions are stub functions
+*/
+void test_mbedtls_ssl_config_free( mbedtls_ssl_config *conf )
+{
+	return;
+}
+
+void test_mbedtls_ctr_drbg_free( mbedtls_ctr_drbg_context *ctx )
+{
+	return;
+}
+
+void test_mbedtls_entropy_free( mbedtls_entropy_context *ctx )
+{
+	return;
+}
+
+
 /*
 	This function is used to test dtls_ssl_destroy
 */
 void TestDtls::test_func_dtls_ssl_destroy()
 {
-	printf("\n\n test dtls_ssl_destroy:");
-	stubInfo si;
+	printf("test dtls_ssl_destroy:\n");
+	stubInfo si_0 , si_1 ,si_2;
+	int p_bio = 0 , ret = 0 , p_timer = 1 , p_entropy = 1;
+	mbedtls_ctr_drbg_context ctrg;
 	mbedtls_ssl_context ssl;
+	memset(&ssl , 0 , sizeof(mbedtls_ssl_context));
+	mbedtls_ssl_config conf;
+	memset(&conf , 0 , sizeof(mbedtls_ssl_config));
+	conf.p_rng = NULL;
 	
-	setStub((void*)dtls_ssl_destroy , (void*)test_dtls_ssl_destroy, &si);
+	
+	mbedtls_platform_set_calloc_free(test_calloc_func , test_free_func);
+	setStub((void*)mbedtls_ssl_config_free, (void*)test_mbedtls_ssl_config_free, &si_0);
+	setStub((void*)mbedtls_ctr_drbg_free, (void*)test_mbedtls_ctr_drbg_free, &si_1);
+	setStub((void*)mbedtls_entropy_free, (void*)test_mbedtls_entropy_free, &si_2);
+	
+	ssl.conf = NULL;
+	ssl.p_bio = NULL;
+	ssl.p_timer = NULL;
 	
 	dtls_ssl_destroy(NULL);
-	TEST_ASSERT( dtls_ssl_destroy_flag == 0 );
-	dtls_ssl_destroy(&ssl);
-	TEST_ASSERT( dtls_ssl_destroy_flag == 1 );
+	TEST_ASSERT(ret == 0);
 	
-	dtls_ssl_destroy_flag = 0; //clear dtls_ssl_destroy_flag 
-	cleanStub(&si);
+	dtls_ssl_destroy(&ssl);
+	TEST_ASSERT(&ssl != NULL);
+	
+	ssl.conf = &conf;
+	ssl.p_bio = &p_bio;
+	ssl.p_timer = &p_timer;
+	ctrg.p_entropy = &p_entropy;
+	(ssl.conf)->p_rng = &ctrg;
+	dtls_ssl_destroy(&ssl);
+	TEST_ASSERT(&ssl != NULL);
+	
+	//dtls_ssl_destroy(NULL);
+	//TEST_ASSERT( dtls_ssl_destroy_flag == 0 );
+	//dtls_ssl_destroy(&ssl);
+	//TEST_ASSERT( dtls_ssl_destroy_flag == 1 );
+	//dtls_ssl_destroy_flag = 0; //clear dtls_ssl_destroy_flag 
+	
+	cleanStub(&si_0);
+	cleanStub(&si_1);
+	cleanStub(&si_2);
+	
 }
 
 
@@ -235,25 +302,36 @@ int test_mbedtls_ssl_set_hostname( mbedtls_ssl_context *ssl, const char *hostnam
 		return 1;
 }
 
+
+/*
+		This function is used to substitute mbedtls_ssl_config_defaults 
+*/
+int test_mbedtls_ssl_config_defaults( mbedtls_ssl_config *conf, int endpoint, int transport, int preset )
+{
+	if(mbedtls_ssl_config_defaults_control_flag  == 0)
+		return 0;
+	else
+		return 1;
+}
+
+
 /*
 	This function is used to test dtls_ssl_new_with_psk
 */
 void TestDtls::test_func_dtls_ssl_new_with_psk()
 {
-	printf("\n\n test dtls_ssl_new_with_psk:");
+	printf("test dtls_ssl_new_with_psk:\n");
 	
 	/*testing variables*/
 	unsigned char psk[16] = {0xef,0xe8,0x18,0x45,0xa3,0x53,0xc1,0x3c,0x0c,0x89,0x92,0xb3,0x1d,0x6b,0x6a,0x83};
     char *psk_identity = "666003"; 
 	mbedtls_ssl_context * p_ssl = NULL;
 	
-	stubInfo si_0 , si_1 , si_2 , si_3 ;
+	stubInfo si_0 , si_1 , si_2 , si_3 , si_4;
 	
 	setStub((void*)mbedtls_ctr_drbg_seed , (void*)test_mbedtls_ctr_drbg_seed, &si_0);
 	setStub((void*)dtls_ssl_destroy , (void*)test_dtls_ssl_destroy, &si_1);
-	//setStub((void*)mbedtls_ssl_conf_psk , (void*)test_mbedtls_ssl_conf_psk , &si_2);
-	//setStub((void*)mbedtls_ssl_setup , (void*)test_mbedtls_ssl_setup , &si_3);
-	//setStub((void*)mbedtls_ssl_set_hostname , (void*)test_mbedtls_ssl_set_hostname , &si_4);
+	
 	
 	/*---------branch control unit------------*/
 	{
@@ -261,49 +339,54 @@ void TestDtls::test_func_dtls_ssl_new_with_psk()
 		mbedtls_ssl_conf_psk_control_flag = 0;
 		mbedtls_ssl_setup_control_flag = 0;
 		mbedtls_ssl_set_hostname_control_flag = 0;
+		mbedtls_ssl_config_defaults_control_flag = 0;
 	}
 	p_ssl = dtls_ssl_new_with_psk((char*)psk , sizeof(psk) , psk_identity);
 	TEST_ASSERT( p_ssl == NULL && dtls_ssl_destroy_flag == 1);
-	printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
+	//printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
 	dtls_ssl_destroy_flag = 0;
+	
 	
 	{//all branch OK!!
 		mbedtls_ctr_drbg_seed_control_flag = 0;    
 		mbedtls_ssl_conf_psk_control_flag = 0;
 		mbedtls_ssl_setup_control_flag = 0;
 		mbedtls_ssl_set_hostname_control_flag = 0;
+		mbedtls_ssl_config_defaults_control_flag = 0;
 	}   
 	p_ssl = dtls_ssl_new_with_psk((char*)psk , sizeof(psk) , psk_identity);
 	TEST_ASSERT(  p_ssl != NULL && dtls_ssl_destroy_flag == 0 );
-	printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
+	//printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
 	
-	//
+	//place stub functions
 	setStub((void*)mbedtls_ssl_conf_psk , (void*)test_mbedtls_ssl_conf_psk , &si_2);
 	setStub((void*)mbedtls_ssl_setup , (void*)test_mbedtls_ssl_setup , &si_3);
-	//setStub((void*)mbedtls_ssl_set_hostname , (void*)test_mbedtls_ssl_set_hostname , &si_4);
+	setStub((void*)mbedtls_ssl_config_defaults , (void*)test_mbedtls_ssl_config_defaults , &si_4);
 	
-	//
+	//mbedtls_ssl_conf_psk goes into wrong branch
 	{
 		mbedtls_ctr_drbg_seed_control_flag = 0;    
 		mbedtls_ssl_conf_psk_control_flag = 1;
 		mbedtls_ssl_setup_control_flag = 0;
 		mbedtls_ssl_set_hostname_control_flag = 0;
+		mbedtls_ssl_config_defaults_control_flag = 0;
 	}
 	p_ssl = dtls_ssl_new_with_psk((char*)psk , sizeof(psk) , psk_identity);
 	TEST_ASSERT( p_ssl == NULL && dtls_ssl_destroy_flag == 1);
-	printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
+	//printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
 	dtls_ssl_destroy_flag = 0;
 	
-	//
+	//mbedtls_ssl_setup goes into wrong branch
 	{
 		mbedtls_ctr_drbg_seed_control_flag = 0;    
 		mbedtls_ssl_conf_psk_control_flag = 0;
 		mbedtls_ssl_setup_control_flag = 1;
 		mbedtls_ssl_set_hostname_control_flag = 0;
+		mbedtls_ssl_config_defaults_control_flag = 0;
 	}
 	p_ssl = dtls_ssl_new_with_psk((char*)psk , sizeof(psk) , psk_identity);
 	TEST_ASSERT( p_ssl == NULL && dtls_ssl_destroy_flag == 1);
-	printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
+	//printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
 	dtls_ssl_destroy_flag = 0;
 	
 	/*
@@ -319,20 +402,33 @@ void TestDtls::test_func_dtls_ssl_new_with_psk()
 	dtls_ssl_destroy_flag = 0;
 	*/
 	
-	//
-	{//reset all flag
+	{
+		mbedtls_ctr_drbg_seed_control_flag = 0;    
+		mbedtls_ssl_conf_psk_control_flag = 0;
+		mbedtls_ssl_setup_control_flag = 0;
+		mbedtls_ssl_set_hostname_control_flag = 0;
+		mbedtls_ssl_config_defaults_control_flag = 1;
+	}
+	p_ssl = dtls_ssl_new_with_psk((char*)psk , sizeof(psk) , psk_identity);
+	TEST_ASSERT( p_ssl == NULL && dtls_ssl_destroy_flag == 1);
+	//printf("dtls_ssl_destroy_flag is %d\n" , dtls_ssl_destroy_flag);
+	dtls_ssl_destroy_flag = 0;
+	
+	
+	//reset all flag
+	{
 		mbedtls_ctr_drbg_seed_control_flag = 0;    
 		mbedtls_ssl_conf_psk_control_flag = 0;
 		mbedtls_ssl_setup_control_flag = 0;
 		mbedtls_ssl_set_hostname_control_flag = 0;
 	}
 	
-	//
+	//clean all stub
 	cleanStub(&si_0);
 	cleanStub(&si_1);
 	cleanStub(&si_2);
 	cleanStub(&si_3);
-	//cleanStub(&si_4);
+	cleanStub(&si_4);
 	
 	
 }
@@ -371,7 +467,7 @@ int test_mbedtls_ssl_handshake( mbedtls_ssl_context *ssl )
 
 void TestDtls::test_func_dtls_shakehand()
 {
-	printf("\n\n test dtls_shakehand");
+	printf("test dtls_shakehand:\n");
 	mbedtls_ssl_context ssl;
 	const char *host = "coaps://192.168.1.110";
 	const char *port = "5684";
@@ -398,11 +494,103 @@ void TestDtls::test_func_dtls_shakehand()
 	//printf("ret is %ld\n",ret);
 	TEST_ASSERT( ssl.p_bio == NULL );
 	
+	mbedtls_platform_set_calloc_free(test_calloc_func , test_free_func);
+	ret = dtls_shakehand(&ssl , host , port);
+	TEST_ASSERT(ret == -0x7F00);
+	//mbedtls_platform_set_calloc_free(atiny_malloc, atiny_free);
+	
 	cleanStub(&si_0);
 	cleanStub(&si_1);
 }
 
 
+
+
+
+
+
+/*
+	This function is used to test mbedtls_net_connect
+*/
+void TestDtls::test_func_mbedtls_net_connect()
+{
+	printf("test mbedtls_net_connect:\n");
+	const char *host = "coaps://192.168.1.110";
+	const char *port = "5684";
+	int proto = MBEDTLS_NET_PROTO_UDP;
+	mbedtls_net_context * p_ret = NULL;
+	
+	p_ret = (mbedtls_net_context *)mbedtls_net_connect(host , port , proto);
+	TEST_ASSERT(p_ret == NULL);
+}
+
+
+/*
+	This function is used to test mbedtls_net_usleep
+*/
+void TestDtls::test_func_mbedtls_net_usleep()
+{
+	printf("test mbedtls_net_usleep:\n");
+	unsigned long usec = 10;
+	mbedtls_net_usleep(usec);
+	TEST_ASSERT(usec == 10);
+}
+
+
+/*
+	This function is used to test mbedtls_net_recv
+*/
+void TestDtls::test_func_mbedtls_net_recv()
+{
+	printf("test mbedtls_net_recv:\n");
+	int ctx;
+	unsigned char buf[10];
+	int ret , len = 10;
+	ret = mbedtls_net_recv(&ctx , buf , len );
+	TEST_ASSERT(ret == 0);
+	
+}
+
+
+/*
+	This function is used to test mbedtls_net_recv_timeout
+*/
+void TestDtls::test_func_mbedtls_net_recv_timeout()
+{
+	printf("test mbedtls_net_recv_timeout:\n");
+	int ret;
+	int ctx , len = 10 , timeout = 10;
+	unsigned char buf[10];
+	ret = mbedtls_net_recv_timeout(&ctx , buf , len , timeout);
+	TEST_ASSERT(ret == 0);
+}
+
+/*
+	This function is used to test mbedtls_net_send
+*/
+void TestDtls::test_func_mbedtls_net_send()
+{
+	printf("test mbedtls_net_send:\n");
+	int ret;
+	int ctx , len = 10;
+	unsigned char buf[10];
+	ret = mbedtls_net_send(&ctx , buf , len);
+	TEST_ASSERT(ret == 0);
+}
+
+
+/*
+	This function is used to test mbedtls_net_free
+*/
+void TestDtls::test_func_mbedtls_net_free()
+{
+	printf("test mbedtls_net_free:\n");
+	mbedtls_net_context ctx;
+	mbedtls_net_free(&ctx);
+	int ret = 0;
+	//printf("fd is %d\n" , ctx.fd);
+	TEST_ASSERT(ret == 0);
+}
 
 /*
 	Add all functions to test array
@@ -414,7 +602,15 @@ TestDtls::TestDtls()
 	TEST_ADD(TestDtls::test_func_dtls_ssl_destroy);
 	TEST_ADD(TestDtls::test_func_dtls_ssl_new_with_psk);
 	TEST_ADD(TestDtls::test_func_dtls_shakehand);
+	TEST_ADD(TestDtls::test_func_mbedtls_net_connect);
+	TEST_ADD(TestDtls::test_func_mbedtls_net_usleep);
+	TEST_ADD(TestDtls::test_func_mbedtls_net_recv);
+	TEST_ADD(TestDtls::test_func_mbedtls_net_recv_timeout);
+	TEST_ADD(TestDtls::test_func_mbedtls_net_send);
+	TEST_ADD(TestDtls::test_func_mbedtls_net_free);
 }
 
-
-
+void TestDtls::tear_down()
+{
+	std::cout << "Test Dtls ends\n";
+}
