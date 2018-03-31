@@ -587,7 +587,8 @@ typedef enum
     TRANS_SENT_TIME_OUT         = 3,
     TRANS_RECV_ACK              = 4,
     TRANS_RECV_RST              = 5,
-    TRANS_SEND_PENDING          = 6
+    TRANS_SEND_PENDING          = 6,
+    TRANS_UNAUTHORIZED          = 7
 }TRANS_STATUS;
 
 

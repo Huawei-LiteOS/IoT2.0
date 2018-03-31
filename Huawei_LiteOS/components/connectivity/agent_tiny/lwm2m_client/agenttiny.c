@@ -394,13 +394,6 @@ int atiny_data_report(void* phandle, data_report_t *report_data)
 void observe_handleAck(lwm2m_transaction_t * transacP, void * message)
 {    
     atiny_ack_callback ack_callback = (atiny_ack_callback)transacP->cfg.callback;
-    if (transacP->ack_received == 1)
-    {
-        ack_callback((atiny_report_type_e)(transacP->cfg.type), transacP->cfg.cookie, SENT_SUCCESS);
-    }
-    else if (transacP->retrans_counter > COAP_MAX_RETRANSMIT + 1)
-    {
-        ack_callback((atiny_report_type_e)(transacP->cfg.type), transacP->cfg.cookie, SENT_TIME_OUT);
-    }
+    ack_callback((atiny_report_type_e)(transacP->cfg.type), transacP->cfg.cookie, (DATA_SEND_STATUS)transacP->ack_received);
 }
 

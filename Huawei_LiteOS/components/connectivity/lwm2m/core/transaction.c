@@ -302,7 +302,7 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
     {
         if (lwm2m_session_is_equal(fromSessionH, transacP->peerH, contextP->userData) == true)
         {
-            if (!transacP->ack_received)
+            if (transacP->ack_received != TRANS_RECV_ACK && transacP->ack_received != TRANS_RECV_RST)
             {
                 if (transacP->mID == message->mid)
                 {            
@@ -335,7 +335,7 @@ bool transaction_handleResponse(lwm2m_context_t * contextP,
                 
                     if ((COAP_401_UNAUTHORIZED == message->code) && (COAP_MAX_RETRANSMIT > transacP->retrans_counter))
                     {
-                        transacP->ack_received = false;
+                        transacP->ack_received = TRANS_UNAUTHORIZED;
                         transacP->retrans_time += COAP_RESPONSE_TIMEOUT;
                         LOG("timeout in transaction_handleResponse\n");
                         return true;
@@ -407,7 +407,7 @@ int transaction_send(lwm2m_context_t * contextP,
         }
     }
 
-    if (!transacP->ack_received)
+    if ( transacP->ack_received != TRANS_SENT_TIME_OUT && transacP->ack_received != TRANS_RECV_RST)
     {
         long unsigned timeout;
 
