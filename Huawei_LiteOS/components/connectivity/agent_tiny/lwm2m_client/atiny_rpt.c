@@ -27,7 +27,6 @@ typedef struct
 }atiny_rpt_node_t;
 
 
-
 static atiny_dl_list g_atiny_rpt_table;
 static void *g_mutex = NULL;
 
@@ -132,7 +131,7 @@ int atiny_init_rpt(void)
     if(NULL == g_mutex)
     {
         ATINY_LOG(LOG_ERR, "atiny_mutex_create fail");
-        return ATINY_RESOURCE_NOT_ENOUGH;;
+        return ATINY_RESOURCE_NOT_ENOUGH;
     }
     return ATINY_OK;
 }
@@ -273,7 +272,6 @@ int atiny_queue_rpt_data(const lwm2m_uri_t *uri, const data_report_t *data)
         ATINY_LOG(LOG_ERR, "null point");
         return ATINY_ARG_INVALID;
     }
-    
     atiny_mutex_lock(g_mutex);
     do
     {
@@ -287,7 +285,6 @@ int atiny_queue_rpt_data(const lwm2m_uri_t *uri, const data_report_t *data)
            ret = ATINY_RESOURCE_NOT_FOUND;
            break;
         }
-
         if(rpt_list->rpt_node_cnt >= MAX_BUFFER_REPORT_CNT)
         {
            ATINY_LOG(LOG_ERR, "uri rpt exceed rpt cnt %d,"URI_FORMAT, 
@@ -306,6 +303,7 @@ int atiny_queue_rpt_data(const lwm2m_uri_t *uri, const data_report_t *data)
         memcpy(&data_node->data, data, sizeof(data_node->data));
         atiny_list_insert_tail(&rpt_list->rpt_list, &data_node->list);
         rpt_list->rpt_node_cnt++;
+      
 
         ret = ATINY_OK;
         

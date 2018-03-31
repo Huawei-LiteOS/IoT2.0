@@ -7,6 +7,7 @@
 #include "test_object_firmware.h"
 #include "test_object_app.h"
 #include "test_connection.h"
+#include "test_atiny_rpt.h"
 
 
 int main(){
@@ -17,6 +18,7 @@ int main(){
   ts.add(std::auto_ptr<Test::Suite>(new TestObjectDevice));
   ts.add(std::auto_ptr<Test::Suite>(new TestObjectFirmware));
   ts.add(std::auto_ptr<Test::Suite>(new TestObjectApp));
+  ts.add(std::auto_ptr<Test::Suite>(new TestAtinyRpt));
 
   std::ofstream html;
   html.open("Result.htm");
