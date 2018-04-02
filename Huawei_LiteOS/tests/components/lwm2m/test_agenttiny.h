@@ -30,6 +30,7 @@ typedef struct
 
 
 class TestAgenttiny:public Test::Suite {
+ public:
   atiny_param_t prv_atiny_params;
   void* prv_handle = NULL;
 

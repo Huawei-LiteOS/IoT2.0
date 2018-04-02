@@ -33,6 +33,8 @@ extern  "C"
     extern lwm2m_object_t * get_object_conn_m(atiny_param_t* atiny_params);
     extern lwm2m_object_t * get_platform_object(atiny_param_t* atiny_params);
     extern void atiny_detroy(void* handle);
+	extern int atiny_queue_rpt_data(const lwm2m_uri_t *uri, const data_report_t *data);
+	extern void observe_handleAck(lwm2m_transaction_t * transacP, void * message);
 	 
     lwm2m_context_t * stub_lwm2m_init(void * userData)
     {
@@ -175,7 +177,7 @@ void TestAgenttiny::test_atiny_init_objects()
   atiny_device_info_t dev_info;
   dev_info.endpoint_name = (char *)"66660003";
   dev_info.manufacturer  = (char *)"huawei";
-  char psk_c[16] = {0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99};
+  unsigned char psk_c[16] = {0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99,0x99};
 
   atiny_param = &st_atiny_param;
   
@@ -316,7 +318,7 @@ void TestAgenttiny::test_atiny_init_objects()
   
 #if 1
   security_param->psk_Id = (char *)"66660003";
-  security_param->psk = psk_c;
+  security_param->psk = (char *)psk_c;
   security_param->psk_len = 16;
   memset(&handle,0,sizeof(handle_data_t));
   memcpy(&handle.atiny_params,atiny_param,sizeof(atiny_param_t));
@@ -348,13 +350,84 @@ void TestAgenttiny::test_atiny_deinit()
   
 }
 
+int stub_lwm2m_stringToUri(const char * buffer,
+		      size_t buffer_len,
+		      lwm2m_uri_t * uriP)
+{
+  return 0;
+}
+
+static int gi_stub_ret = 0;
+int stub_atiny_queue_rpt_data(const lwm2m_uri_t *uri, const data_report_t *data)
+{
+  return gi_stub_ret;
+}
 void TestAgenttiny::test_atiny_data_report()
 {
+  void * handle = NULL;
+  data_report_t report_data;
+  lwm2m_context_t* atiny_context;
+  
+  int ret = atiny_data_report(handle, NULL);
+  TEST_ASSERT((ret == ATINY_ARG_INVALID));
+
+  ret = atiny_data_report(handle, &report_data);
+  TEST_ASSERT((ret == ATINY_ARG_INVALID));
+  
+  handle = this->prv_handle;
+  atiny_context = ((handle_data_t*)handle)->lwm2m_context;
+  atiny_context->state = STATE_INITIAL;
+  report_data.buf = (uint8_t*)"test data";
+  report_data.len = strlen("test data");
+  ret = atiny_data_report(handle, &report_data);
+  std::cout<<"ret = "<<ret<<"\n";
+  TEST_ASSERT((ret == ATINY_CLIENT_UNREGISTERED));
+
+
+  stubInfo si;
+  stubInfo si2;
+  setStub((void*)lwm2m_stringToUri, (void*)stub_lwm2m_stringToUri, &si);
+  setStub((void*)atiny_queue_rpt_data, (void*)stub_atiny_queue_rpt_data, &si2);
+
+  gi_stub_ret = ATINY_OK;
+  atiny_context->state = STATE_READY;
+  report_data.type = FIRMWARE_UPDATE_STATE;
+  ret = atiny_data_report(handle, &report_data);
+  TEST_ASSERT(ret == ATINY_OK);
+  
+  gi_stub_ret = ATINY_BUF_OVERFLOW;
+  ret = atiny_data_report(handle, &report_data);
+  TEST_ASSERT(ret == ATINY_BUF_OVERFLOW);
+
+  
+  cleanStub(&si2);
+  cleanStub(&si);
+}
+
+static int gs_callback_status = -1;
+void test_atiny_ack_callback(atiny_report_type_e type, int cookie, DATA_SEND_STATUS status)
+{
+  gs_callback_status = status;
 
 }
 
 void TestAgenttiny::test_observe_handleAck()
 {
+  lwm2m_transaction_t trans;
+  void* message = NULL;
+  
+  trans.cfg.callback = (lwm2m_data_process)test_atiny_ack_callback;
+  trans.ack_received = 1;
+
+  observe_handleAck(&trans, message);
+  TEST_ASSERT(gs_callback_status == SENT_SUCCESS);
+
+  gs_callback_status = -1;
+  trans.ack_received = 0;
+  trans.retrans_counter = 5;
+  observe_handleAck(&trans, message);
+  TEST_ASSERT(gs_callback_status == SENT_TIME_OUT);
+  
 
 }
 TestAgenttiny::TestAgenttiny()
@@ -382,11 +455,15 @@ void TestAgenttiny::setup()
   atiny_params->server_params.storing_cnt = 0;
 
   atiny_init(atiny_params, &this->prv_handle);
+
+  ((handle_data_t*)this->prv_handle)->lwm2m_context = (lwm2m_context_t*)malloc(sizeof(lwm2m_context_t));
   TEST_ASSERT((atiny_params != NULL));
+  TEST_ASSERT(this->prv_handle != NULL);
 }
 
 void TestAgenttiny::tear_down()
 {
+  free(((handle_data_t*)this->prv_handle)->lwm2m_context);
   atiny_deinit(this->prv_handle);
   printf("tear_down in TestAgenttiny\n");
 }
