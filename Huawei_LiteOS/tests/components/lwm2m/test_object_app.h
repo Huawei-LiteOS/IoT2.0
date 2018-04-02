@@ -7,9 +7,9 @@ class TestObjectApp:public Test::Suite {
   void setup();
 
  public:
-  void test_func1();
-  void test_func2();
-  void test_func3();
+  void test_prv_read();
+  void test_prv_write();
+  void test_prv_exec();
 
   TestObjectApp();
 };

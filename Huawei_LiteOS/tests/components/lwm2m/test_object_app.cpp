@@ -43,7 +43,7 @@ void param_init()
 	
 }
 
-void TestObjectApp::test_func1(){
+void TestObjectApp::test_prv_read(){
       int result;
       int len = 1; 
 	  lwm2m_uri_t uri = {.flag = 0x07, .objectId = 19, .instanceId = 0, .resourceId = 0};
@@ -158,7 +158,7 @@ void TestObjectApp::test_func1(){
   
 }
 	  
-void TestObjectApp::test_func2(){
+void TestObjectApp::test_prv_write(){
       int result;
       int len = 0;
 	  uint8_t * buffer = NULL;
@@ -203,7 +203,7 @@ void TestObjectApp::test_func2(){
 	  free_object_device(testObj);
 	  
 }
-void TestObjectApp::test_func3(){
+void TestObjectApp::test_prv_exec(){
       int result;
 	  lwm2m_uri_t uri = {.flag = 0x07, .objectId = 19, .instanceId = 0, .resourceId = 0};
 	  lwm2m_object_t * testObj = NULL;
@@ -245,9 +245,9 @@ void TestObjectApp::test_func3(){
 
 
   TestObjectApp::TestObjectApp(){
-      TEST_ADD(TestObjectApp::test_func1);
-      TEST_ADD(TestObjectApp::test_func2);
-      TEST_ADD(TestObjectApp::test_func3);
+    TEST_ADD(TestObjectApp::test_prv_read);
+	TEST_ADD(TestObjectApp::test_prv_write);
+    TEST_ADD(TestObjectApp::test_prv_exec);
   }
 
   void TestObjectApp::setup(){

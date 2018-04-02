@@ -7,9 +7,9 @@
 //for lwip defined
 #define F_GETFL 3
 
-
+UINT32  g_semCrt = -1;
 UINT32  g_vuwIntCount = 0;
-UINT64      g_ullTickCount;
+UINT64      g_ullTickCount = 0;
 UINT8 m_aucSysMem0[OS_SYS_MEM_SIZE];
 void *g_pstAllSem;
 #ifdef __cplusplus
@@ -68,7 +68,7 @@ uint32_t RNG_GetRandomNumber(void)
 
 UINT32 LOS_BinarySemCreate (UINT16 usCount, UINT32 *puwSemHandle)
 {
-    return -1;
+    return g_semCrt;
 }
 UINT32 LOS_SemDelete(UINT32 uwSemHandle)
 {

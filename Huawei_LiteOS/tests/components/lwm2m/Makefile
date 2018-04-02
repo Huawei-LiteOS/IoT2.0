@@ -52,7 +52,7 @@ INCLUDES:= -I$(HW_LITEOSDIR)/components/connectivity/lwm2m/core/ \
     -I$(HW_LITEOSDIR)/components/connectivity/agent_tiny/examples/ \
 
 
-CPP_OBJ:=main.o test_agenttiny.o test_connection.o test_object_connectivity_moni.o test_object_device.o test_object_firmware.o test_object_app.o test_atiny_rpt.o
+CPP_OBJ:=main.o test_atiny_adapter.o test_agenttiny.o test_connection.o test_object_connectivity_moni.o test_object_device.o test_object_firmware.o test_object_app.o
 C_OBJ:=adapter_layer.o 
 all:lib $(BIN)
 lib:$(LIB)
