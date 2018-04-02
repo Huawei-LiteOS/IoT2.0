@@ -14,8 +14,17 @@ void* 	 atiny_malloc(size_t size)
 
 int	atiny_printf(const char *format, ...)
 {
-	printf(format);
-	return 0;
+	//printf(format);
+	//return 0;
+	int ret;
+    va_list args;
+
+    va_start(args, format);
+    ret = vprintf(format, args);
+    va_end(args);
+
+    fflush(stdout);
+    return ret;
 }
 
 
@@ -27,7 +36,7 @@ int	atiny_snprintf(char *buf, unsigned int size, const char *format, ...)
 
 void	atiny_free(void *ptr)
 {
-	free(ptr);
+	if(ptr!= NULL) free(ptr);
 	return;
 }
 
@@ -56,6 +65,7 @@ int	atiny_random(unsigned char *output, size_t len)
 
 void	atiny_net_close( void *ctx )
 {
+	if(ctx != NULL) free(ctx);
 	return;
 }
 

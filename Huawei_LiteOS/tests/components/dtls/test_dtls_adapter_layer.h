@@ -8,6 +8,7 @@ extern "C" {
 #include"atiny_adapter.h"
 #include"atiny_socket.h"
 #include"net_sockets.h"
+#include<stdarg.h>
 
 
 

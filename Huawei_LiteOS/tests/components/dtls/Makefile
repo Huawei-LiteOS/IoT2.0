@@ -23,7 +23,7 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 
 SRC:= $(wildcard $(HW_LITEOSDIR)/components/security/mbedtls/mbedtls_port/*.c)
 SRC+= $(wildcard $(HW_LITEOSDIR)/components/security/mbedtls/mbedtls-2.6.0/library/*.c)
-SRC+= $(wildcard $(HW_LITEOSDIR)/tests/*.c)
+SRC+= $(HW_LITEOSDIR)/tests/stub.c
 #$(wildcard *.c, $(HW_LITEOSDIR)/components/connectivity/agent_tiny/lwm2m_client/*.c)
 #SRC+= $(HW_LITEOSDIR)/components/connectivity/agent_tiny/examples/agent_tiny_example.c
 #SRC+= $(wildcard $(HW_LITEOSDIR)/components/connectivity/lwm2m/core/*.c)
@@ -102,5 +102,5 @@ run:
 cov:
 	mkdir -p gcov
 	./$(BIN)
-	lcov -c -o gcov/gcov.info -d $(HW_LITEOSDIR) -b . --rc lcov_branch_coverage=1
+	lcov -c -o gcov/gcov.info -d $(HW_LITEOSDIR)/components/security  -b . --rc lcov_branch_coverage=1
 	genhtml -o gcov/html gcov/gcov.info --rc genhtml_branch_coverage=1

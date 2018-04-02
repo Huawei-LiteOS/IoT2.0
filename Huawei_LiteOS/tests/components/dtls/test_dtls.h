@@ -1,12 +1,17 @@
 #ifndef _TEST_DTLS_H_
 #define _TEST_DTLS_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <cpptest.h>
 #include "dtls_interface.h"            //a must
 #include "test_dtls_adapter_layer.h"
 #include "stub.h"
 #include "net_sockets.h"
 
-
+extern void mbedtls_net_init( mbedtls_net_context *ctx );
 
 
 /*-------------dtls_write() function used--------------*/
@@ -64,9 +69,14 @@ class TestDtls: public Test::Suite
 		void test_func_mbedtls_net_recv_timeout();
 		void test_func_mbedtls_net_send();
 		void test_func_mbedtls_net_free();
+		void test_mbedtls_net_init();
 		
 		TestDtls();
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
