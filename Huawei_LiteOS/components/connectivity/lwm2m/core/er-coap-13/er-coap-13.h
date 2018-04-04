@@ -129,13 +129,18 @@ typedef enum {
   COAP_GET = 1,
   COAP_POST,
   COAP_PUT,
-  COAP_DELETE
+  COAP_DELETE,
+  COAP_METHOD_MAX = 31
 } coap_method_t;
+
+
+
 
 /* CoAP response codes */
 typedef enum {
   NO_ERROR = 0,
-
+  
+  OK_2_00 = 64,                         /* reserved */
   CREATED_2_01 = 65,                    /* CREATED */
   DELETED_2_02 = 66,                    /* DELETED */
   VALID_2_03 = 67,                      /* NOT_MODIFIED */
@@ -165,9 +170,16 @@ typedef enum {
   PACKET_SERIALIZATION_ERROR,
 
   /* Erbium hooks */
-  MANUAL_RESPONSE
+  MANUAL_RESPONSE,
+  MAX_RESPONSE_CODE = (5 * 32) + 31     /* reserved: MAX RESPONSE CODE  */
 
 } coap_status_t;
+
+#define IS_REQUEST(code)  (code >= COAP_GET && code <= COAP_METHOD_MAX)
+
+#define IS_RESPONSE(code)  (code >= (OK_2_00) && code <= MAX_RESPONSE_CODE)
+
+
 
 /* CoAP header options */
 typedef enum {
